@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Plantillas Velocity</title>
+    <style>
+        #template,
+        #variables,
+        #output {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Editor de Plantillas Velocity</h1>
+    <textarea id="template" placeholder="Escribe tu plantilla de Velocity aquí..."></textarea>
+    <textarea id="variables"
+        placeholder="Escribe tus variables en JSON aquí...">{ "CTX": { "product": { "price": "$29.99" } } }</textarea>
+    <button onclick="previewTemplate()">Previsualizar</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function previewTemplate() {
+            const template = document.getElementById('template').value;
+            const variables = JSON.parse(document.getElementById('variables').value);
+
+            const response = await fetch('/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template, variables })
+            });
+
+            const result = await response.json();
+            document.getElementById('output').textContent = result.output || result.error;
+        }
+    </script>
+</body>
+
+</html>
