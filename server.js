@@ -6,6 +6,22 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
+// CSP amigable para que el iframe funcione sin bloqueos
+app.use((req, res, next) => {
+  // Solo aplicar CSP a respuestas exitosas (no a 404)
+  const originalJson = res.json.bind(res);
+  const originalSend = res.send.bind(res);
+  
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src 'self' https:; connect-src 'self' https:; img-src 'self' data: https:"
+  );
+  next();
+});
+
+// Servir archivos estáticos (el frontend)
+app.use(express.static("public"));
+
 // Función para verificar si todas las variables están presentes
 function checkVariables(template, variables) {
   const missingVariables = [];
