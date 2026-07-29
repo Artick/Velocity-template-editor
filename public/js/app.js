@@ -63,13 +63,18 @@ function togglePreviewTheme() {
   textEl.classList.toggle("light-theme", previewTheme === "light");
   wrapper.classList.toggle("light-theme", previewTheme === "light");
 
-  // Iframe theme via injected CSS
+  // Aplicar tema al iframe (cambia fondo del contenedor + inyecta CSS)
   const iframe = document.getElementById("outputPreview");
   try {
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     if (doc.body) {
-      doc.body.style.background = previewTheme === "light" ? "#ffffff" : "#ffffff";
-      doc.body.style.color = previewTheme === "light" ? "#1a1a2e" : "#1a1a2e";
+      if (previewTheme === "light") {
+        doc.body.style.background = "#ffffff";
+        doc.body.style.color = "#1a1a2e";
+      } else {
+        doc.body.style.background = "#ffffff";
+        doc.body.style.color = "#1a1a2e";
+      }
     }
   } catch(e) {}
 }
@@ -165,11 +170,54 @@ function updateVariablesFromTemplate() {
 
   const varPaths = detectVariablesFromTemplate(template);
 
-  if (varPaths.length === 0) return; // Sin variables que detectar
+  if (varPaths.length === 0) return;
 
-  const newJson = buildDefaultJson(varPaths, existingJson);
+  // Opción 4: SOLO agregar, NUNCA borrar variables existentes
+  // 1. Construir JSON solo con las variables del template
+  const templateJson = buildDefaultJson(varPaths, existingJson);
 
-  // Contar cuántas son "No Definido"
+  // 2. Fusionar con las variables existentes (las del template tienen prioridad,
+  //    pero las extras que el usuario agregó a mano se conservan)
+  function deepMerge(target, source) {
+    for (const key of Object.keys(source)) {
+      if (typeof source[key] === "object" && source[key] !== null && !Array.isArray(source[key])) {
+        if (!target[key] || typeof target[key] !== "object") target[key] = {};
+        deepMerge(target[key], source[key]);
+      } else {
+        // Solo sobrescribir si la variable existe en el template
+        // Si el usuario la agregó manualmente y no está en template, conservarla
+        target[key] = source[key];
+      }
+    }
+  }
+
+  // Comenzar con el JSON existente y pisar con lo del template
+  const merged = JSON.parse(JSON.stringify(existingJson));
+  deepMerge(merged, templateJson);
+
+  // También agregar variables del template que no existían
+  for (const key of Object.keys(templateJson)) {
+    if (!(key in merged)) {
+      merged[key] = templateJson[key];
+    }
+  }
+
+  // Detectar variables extras (están en JSON pero no en template)
+  const templatePaths = new Set(varPaths);
+  const extraVars = [];
+  function findExtras(obj, prefix) {
+    for (const k of Object.keys(obj)) {
+      const path = prefix ? prefix + "." + k : k;
+      if (typeof obj[k] === "object" && obj[k] !== null && !Array.isArray(obj[k])) {
+        findExtras(obj[k], path);
+      } else if (!templatePaths.has(path) && path !== "") {
+        extraVars.push(path);
+      }
+    }
+  }
+  findExtras(merged, "");
+
+  // Contar undefined
   let undefinedCount = 0;
   function countUndefined(obj) {
     for (const k of Object.keys(obj)) {
@@ -177,24 +225,36 @@ function updateVariablesFromTemplate() {
       else if (typeof obj[k] === "object" && obj[k] !== null) countUndefined(obj[k]);
     }
   }
-  countUndefined(newJson);
+  countUndefined(merged);
 
-  varsEditor.setValue(JSON.stringify(newJson, null, 2));
+  // Actualizar JSON
+  varsEditor.setValue(JSON.stringify(merged, null, 2));
 
-  // Actualizar badge
-  document.getElementById("varCount").textContent = `${varPaths.length} vars`;
+  // Badge de variables totales
+  let totalCount = 0;
+  function countAll(obj) {
+    for (const k of Object.keys(obj)) {
+      if (typeof obj[k] === "object" && obj[k] !== null && !Array.isArray(obj[k])) {
+        countAll(obj[k]);
+      }
+      totalCount++;
+    }
+  }
+  countAll(merged);
+  document.getElementById("varCount").textContent = `${totalCount} vars`;
 
-  // Si hay undefined, mostrar badge de sync
   const badge = document.getElementById("varSyncBadge");
-  if (undefinedCount > 0) {
+  const parts = [];
+  if (undefinedCount > 0) parts.push(`⚠ ${undefinedCount} sin valor`);
+  if (extraVars.length > 0) parts.push(`+${extraVars.length} extra`);
+  if (parts.length > 0) {
     badge.style.display = "inline";
-    badge.textContent = `⚠ ${undefinedCount} sin valor`;
+    badge.textContent = parts.join(" ");
   } else {
     badge.style.display = "none";
   }
 
-  // Actualizar tabla y árbol
-  buildVarTable();
+  // Actualizar árbol (NO la tabla - para no perder foco)
   buildVarTree();
 }
 
@@ -646,15 +706,11 @@ document.addEventListener("DOMContentLoaded", () => {
     autoDetectTimer = setTimeout(updateVariablesFromTemplate, 1200);
   });
 
-  // Sync JSON editor → Table + Tree on JSON changes
+  // Sync JSON editor → actualizar badge y árbol (NO la tabla, para no perder foco)
   varsEditor.on("change", () => {
     try {
       const vars = JSON.parse(varsEditor.getValue() || "{}");
       updateVarBadge(vars);
-      // Si la tabla es la vista activa, actualizarla
-      if (document.querySelector('[data-vars-tab="table"]').classList.contains("active")) {
-        buildVarTable();
-      }
       if (document.querySelector('[data-vars-tab="tree"]').classList.contains("active")) {
         buildVarTree();
       }
