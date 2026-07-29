@@ -5,19 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Velocity Template Editor</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-
-  <!-- CodeMirror CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css">
-
-  <!-- Estilos propios -->
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <!-- ═══ HEADER ═══ -->
+  <!-- HEADER -->
   <header class="header">
     <h1>⚡ Velocity Editor</h1>
     <div class="header-controls">
@@ -40,78 +36,110 @@
     </div>
   </header>
 
-  <!-- ═══ MAIN SPLIT ═══ -->
+  <!-- MAIN SPLIT -->
   <div class="main">
-    <!-- Panel izquierdo: Editor -->
-    <div class="panel">
-      <div class="panel-header">
-        📄 Template <span class="badge">.vm</span>
-      </div>
-      <textarea id="template">Hola $nombre!</textarea>
 
-      <!-- Variables colapsables -->
-      <div class="vars-section">
-        <button class="vars-toggle" id="varsToggle">
-          <span class="arrow" id="varsArrow">▶</span> Variables JSON
-        </button>
-        <div class="vars-body" id="varsBody">
-          <textarea id="variables">{ "nombre": "Artick" }</textarea>
-        </div>
+    <!-- ─── PANEL IZQUIERDO: TEMPLATE (colapsable) ─── -->
+    <div class="panel panel-template">
+      <button class="panel-collapse" data-panel="templatePanel">
+        <span class="collapse-arrow" id="templateArrow">▾</span>
+        📄 Template <span class="badge">.vm</span>
+      </button>
+      <div class="panel-body" id="templatePanel">
+        <textarea id="template">Hola $nombre!</textarea>
       </div>
     </div>
 
-    <!-- Panel derecho: Preview -->
-    <div class="panel">
+    <!-- ─── PANEL DERECHO: PREVIEW ─── -->
+    <div class="panel panel-preview">
       <div class="panel-header">
         🖼 Resultado
+        <div class="preview-controls">
+          <button class="preview-mode-btn" id="previewThemeBtn" title="Cambiar tema">🌙</button>
+          <select class="preview-mode-select" id="previewWidth">
+            <option value="100%">Responsive</option>
+            <option value="480px">📱 480px</option>
+            <option value="768px">📱 768px</option>
+            <option value="1024px">💻 1024px</option>
+          </select>
+        </div>
         <div class="preview-tabs">
           <span class="preview-tab active" data-mode="text">Texto</span>
           <span class="preview-tab" data-mode="html">HTML</span>
         </div>
       </div>
       <div class="preview-body" id="outputText">Presiona ▶ Render o Ctrl+Enter</div>
-      <iframe id="outputPreview" style="display:none;"></iframe>
+      <div class="preview-iframe-wrapper" id="previewIframeWrapper">
+        <iframe id="outputPreview"></iframe>
+      </div>
     </div>
   </div>
 
-  <!-- ═══ PANEL INFERIOR ═══ -->
-  <div class="bottom-panel">
-    <div class="bottom-tabs">
-      <span class="bottom-tab active" data-tab="history">📋 Historial</span>
-      <span class="bottom-tab" data-tab="vartree">🌳 Variables</span>
-      <span class="bottom-tab" data-tab="help">❓ Ayuda</span>
-    </div>
-
-    <div class="bottom-body open" id="panel-history">
-      <div class="bottom-content" id="historyList">
-        <div class="history-empty">Sin historial aún. Los templates se guardan al renderizar.</div>
+  <!-- ─── SECCIÓN VARIABLES (colapsable, con tabs) ─── -->
+  <div class="vars-section">
+    <button class="panel-collapse vars-main-toggle" data-panel="varsPanel">
+      <span class="collapse-arrow" id="varsArrow">▾</span>
+      🔧 Variables
+      <span class="badge badge-var-count" id="varCount">0 vars</span>
+      <span class="badge badge-sync" id="varSyncBadge" style="display:none;">↻</span>
+    </button>
+    <div class="panel-body" id="varsPanel">
+      <div class="vars-tabs">
+        <span class="vars-tab active" data-vars-tab="json">📝 JSON</span>
+        <span class="vars-tab" data-vars-tab="table">📋 Tabla</span>
+        <span class="vars-tab" data-vars-tab="tree">🌳 Árbol</span>
+      </div>
+      <div class="vars-tab-content active" id="varsTabJson">
+        <textarea id="variables">{ "nombre": "Artick" }</textarea>
+      </div>
+      <div class="vars-tab-content" id="varsTabTable">
+        <div class="var-table-container" id="varTableContainer">
+          <div class="history-empty">Renderiza para detectar variables o cámbialas en la vista JSON.</div>
+        </div>
+      </div>
+      <div class="vars-tab-content" id="varsTabTree">
+        <div class="bottom-content-scroll" id="varTreeContainer">
+          <div class="history-empty">Renderiza para ver el árbol de variables.</div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="bottom-body" id="panel-vartree">
-      <div class="bottom-content" id="varTreeContainer">
-        <div class="history-empty">Abre variables y haz Render para ver el árbol.</div>
+  <!-- ─── PANEL INFERIOR (colapsable) ─── -->
+  <div class="bottom-section">
+    <button class="panel-collapse" data-panel="bottomPanel">
+      <span class="collapse-arrow" id="bottomArrow">▾</span>
+      📋 Historial
+    </button>
+    <div class="panel-body" id="bottomPanel">
+      <div class="bottom-tabs">
+        <span class="bottom-tab active" data-tab="history">📋 Historial</span>
+        <span class="bottom-tab" data-tab="help">❓ Ayuda</span>
       </div>
-    </div>
-
-    <div class="bottom-body" id="panel-help">
-      <div class="bottom-content">
-        <div class="help-section">
-          <h4>📝 Sintaxis Velocity</h4>
-          <p><code>$variable</code> — Variable simple</p>
-          <p><code>$objeto.propiedad</code> — Variable anidada</p>
-          <p><code>${variable}</code> — Variable con llaves</p>
+      <div class="bottom-tab-content active" id="panel-history">
+        <div class="bottom-content-scroll" id="historyList">
+          <div class="history-empty">Sin historial aún. Los templates se guardan al renderizar.</div>
         </div>
-        <div class="help-section">
-          <h4>🔄 Directivas</h4>
-          <p><code>#if( $x ) ... #else ... #end</code> — Condicional</p>
-          <p><code>#foreach( $item in $lista ) ... #end</code> — Bucle</p>
-          <p><code>#set( $x = 42 )</code> — Asignación</p>
-        </div>
-        <div class="help-section">
-          <h4>⌨️ Atajos</h4>
-          <p><code>Ctrl+Enter</code> — Renderizar</p>
-          <p><code>$ + Tab</code> — Autocompletar variable</p>
+      </div>
+      <div class="bottom-tab-content" id="panel-help">
+        <div class="bottom-content-scroll">
+          <div class="help-section">
+            <h4>📝 Sintaxis Velocity</h4>
+            <p><code>$variable</code> — Variable simple</p>
+            <p><code>$objeto.propiedad</code> — Variable anidada</p>
+            <p><code>${variable}</code> — Variable con llaves</p>
+          </div>
+          <div class="help-section">
+            <h4>🔄 Directivas</h4>
+            <p><code>#if( $x ) ... #else ... #end</code> — Condicional</p>
+            <p><code>#foreach( $item in $lista ) ... #end</code> — Bucle</p>
+            <p><code>#set( $x = 42 )</code> — Asignación</p>
+          </div>
+          <div class="help-section">
+            <h4>⌨️ Atajos</h4>
+            <p><code>Ctrl+Enter</code> — Renderizar</p>
+            <p><code>$ + Tab</code> — Autocompletar variable</p>
+          </div>
         </div>
       </div>
     </div>
@@ -120,7 +148,7 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- ═══ SCRIPTS (orden importante) ═══ -->
+  <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/velocity/velocity.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
@@ -129,7 +157,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.js"></script>
 
-  <!-- JS propio (ordenado: data → editor → app) -->
   <script src="/js/examples.js"></script>
   <script src="/js/editor.js"></script>
   <script src="/js/app.js"></script>

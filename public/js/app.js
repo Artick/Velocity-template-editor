@@ -1,19 +1,17 @@
 /* ═══════════════════════════════════════════
    Velocity Template Editor — App principal
-   Render, Historial, Árbol, Export/Import
    ═══════════════════════════════════════════ */
 
 let previewMode = "text";
+let previewTheme = "dark";
 let historyId = 0;
 let currentTemplateName = "Sin título";
+let autoDetectTimer = null;
 
-// ─── Utilidades ───
+// ─── Utils ───
 
 function escHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 function setStatus(text, type) {
@@ -29,46 +27,358 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 2500);
 }
 
-// ─── Toggle variables ───
+// ─── Collapsible panels ───
 
-function toggleVars() {
-  document.getElementById("varsToggle").click();
+function setupCollapsible() {
+  document.querySelectorAll("[data-panel]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const panelId = btn.dataset.panel;
+      const body = document.getElementById(panelId);
+      const arrow = btn.querySelector(".collapse-arrow");
+      if (!body) return;
+      body.classList.toggle("closed");
+      if (arrow) arrow.classList.toggle("closed");
+    });
+  });
 }
 
-// ─── Switch preview tabs ───
+// ─── Preview tabs + theme + width ───
 
 function switchPreview(mode) {
   previewMode = mode;
-  document.querySelectorAll(".preview-tab").forEach(t => {
-    t.classList.toggle("active", t.dataset.mode === mode);
-  });
-  document.getElementById("outputText").style.display =
-    mode === "text" ? "block" : "none";
-  document.getElementById("outputPreview").style.display =
-    mode === "html" ? "block" : "none";
+  document.querySelectorAll(".preview-tab").forEach(t =>
+    t.classList.toggle("active", t.dataset.mode === mode)
+  );
+  document.getElementById("outputText").style.display = mode === "text" ? "block" : "none";
+  document.getElementById("previewIframeWrapper").classList.toggle("visible", mode === "html");
 }
 
-// ─── Switch bottom tabs ───
+function togglePreviewTheme() {
+  previewTheme = previewTheme === "dark" ? "light" : "dark";
+  const btn = document.getElementById("previewThemeBtn");
+  btn.textContent = previewTheme === "dark" ? "🌙" : "☀️";
 
-function switchBottomTab(tab) {
-  document.querySelectorAll(".bottom-tab").forEach(t => {
-    t.classList.toggle("active", t.dataset.tab === tab);
-  });
-  document.querySelectorAll(".bottom-body").forEach(b => {
-    b.classList.remove("open");
-  });
-  const panel = document.getElementById("panel-" + tab);
-  if (panel) panel.classList.add("open");
-  if (tab === "vartree") buildVarTree();
+  const textEl = document.getElementById("outputText");
+  const wrapper = document.getElementById("previewIframeWrapper");
+  textEl.classList.toggle("light-theme", previewTheme === "light");
+  wrapper.classList.toggle("light-theme", previewTheme === "light");
+
+  // Iframe theme via injected CSS
+  const iframe = document.getElementById("outputPreview");
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    if (doc.body) {
+      doc.body.style.background = previewTheme === "light" ? "#ffffff" : "#ffffff";
+      doc.body.style.color = previewTheme === "light" ? "#1a1a2e" : "#1a1a2e";
+    }
+  } catch(e) {}
 }
 
-// ─── Render ───
+function setPreviewWidth(val) {
+  document.getElementById("outputPreview").style.maxWidth = val;
+}
+
+// ─── Auto-detect variables from template ───
+
+function detectVariablesFromTemplate(template) {
+  // Regex para encontrar variables Velocity
+  const varRegex = /\$\{?([a-zA-Z_][a-zA-Z0-9_.]*)\}?/g;
+  // Directivas Velocity a ignorar
+  const directives = new Set([
+    "foreach","if","else","elseif","end","set","parse","include","macro","stop",
+    "evaluate","define","literal","noescape"
+  ]);
+
+  const found = {};
+
+  let match;
+  while ((match = varRegex.exec(template)) !== null) {
+    const fullPath = match[1];
+
+    // Ignorar directivas
+    const firstPart = fullPath.split(/[.\[]/)[0];
+    if (directives.has(firstPart)) continue;
+    // Ignorar llamadas a métodos: .size(), .get(), etc
+    if (fullPath.endsWith(")") || fullPath.endsWith(")")) {
+      const parenIdx = fullPath.indexOf("(");
+      if (parenIdx > 0) {
+        const cleanPath = fullPath.substring(0, parenIdx);
+        found[cleanPath] = { path: cleanPath, type: "method" };
+      }
+      continue;
+    }
+
+    found[fullPath] = { path: fullPath, type: "var" };
+  }
+
+  return Object.keys(found).map(k => found[k].path);
+}
+
+function buildDefaultJson(variablePaths, existingJson) {
+  const result = {};
+
+  function ensurePath(obj, pathParts, idx, existingVal) {
+    if (idx >= pathParts.length) return;
+    const key = pathParts[idx];
+    const isLast = idx === pathParts.length - 1;
+
+    if (isLast) {
+      // Si ya existe un valor en el JSON, conservarlo
+      if (existingVal !== undefined && existingVal !== null) {
+        obj[key] = existingVal;
+      } else {
+        obj[key] = "No Definido";
+      }
+    } else {
+      if (!obj[key] || typeof obj[key] !== "object" || Array.isArray(obj[key])) {
+        obj[key] = {};
+      }
+      const nextVal = existingVal && typeof existingVal === "object" ? existingVal[key] : undefined;
+      ensurePath(obj[key], pathParts, idx + 1, nextVal);
+    }
+  }
+
+  for (const varPath of variablePaths) {
+    const parts = varPath.split(".");
+    const existingVal = getNestedValue(existingJson, parts);
+    ensurePath(result, parts, 0, existingVal);
+  }
+
+  return result;
+}
+
+function getNestedValue(obj, pathParts) {
+  let current = obj;
+  for (const p of pathParts) {
+    if (current === null || current === undefined || typeof current !== "object") return undefined;
+    current = current[p];
+  }
+  return current;
+}
+
+function updateVariablesFromTemplate() {
+  const template = templateEditor.getValue();
+  const varsText = varsEditor.getValue();
+  let existingJson = {};
+
+  try { existingJson = JSON.parse(varsText || "{}"); } catch(e) {}
+
+  const varPaths = detectVariablesFromTemplate(template);
+
+  if (varPaths.length === 0) return; // Sin variables que detectar
+
+  const newJson = buildDefaultJson(varPaths, existingJson);
+
+  // Contar cuántas son "No Definido"
+  let undefinedCount = 0;
+  function countUndefined(obj) {
+    for (const k of Object.keys(obj)) {
+      if (obj[k] === "No Definido") undefinedCount++;
+      else if (typeof obj[k] === "object" && obj[k] !== null) countUndefined(obj[k]);
+    }
+  }
+  countUndefined(newJson);
+
+  varsEditor.setValue(JSON.stringify(newJson, null, 2));
+
+  // Actualizar badge
+  document.getElementById("varCount").textContent = `${varPaths.length} vars`;
+
+  // Si hay undefined, mostrar badge de sync
+  const badge = document.getElementById("varSyncBadge");
+  if (undefinedCount > 0) {
+    badge.style.display = "inline";
+    badge.textContent = `⚠ ${undefinedCount} sin valor`;
+  } else {
+    badge.style.display = "none";
+  }
+
+  // Actualizar tabla y árbol
+  buildVarTable();
+  buildVarTree();
+}
+
+// ─── Variable Table ───
+
+function flattenVars(obj, prefix) {
+  const result = [];
+  for (const key of Object.keys(obj)) {
+    const path = prefix ? prefix + "." + key : key;
+    const val = obj[key];
+    if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      result.push(...flattenVars(val, path));
+    } else {
+      result.push({ path, key, value: val });
+    }
+  }
+  return result;
+}
+
+function buildVarTable() {
+  const container = document.getElementById("varTableContainer");
+  try {
+    const vars = JSON.parse(varsEditor.getValue() || "{}");
+    const flat = flattenVars(vars, "");
+
+    if (flat.length === 0) {
+      container.innerHTML = '<div class="history-empty">No hay variables definidas.</div>';
+      return;
+    }
+
+    let html = '<table class="var-table"><thead><tr>' +
+      '<th style="width:30px;"></th>' +
+      '<th>Variable</th>' +
+      '<th>Valor</th>' +
+      '<th>Tipo</th>' +
+      '</tr></thead><tbody>';
+
+    for (const item of flat) {
+      const isUndefined = item.value === "No Definido" || item.value === undefined || item.value === null;
+      const typeStr = item.value === "No Definido" ? "⚠ Sin valor"
+        : typeof item.value === "number" ? "number"
+        : typeof item.value === "boolean" ? "boolean"
+        : Array.isArray(item.value) ? "array[" + item.value.length + "]"
+        : "string";
+
+      const displayVal = isUndefined ? "" : String(item.value);
+      html += '<tr>' +
+        '<td><span class="vt-status ' + (isUndefined ? "undefined" : "defined") + '"></span></td>' +
+        '<td class="vt-key-cell">' + escHtml(item.path) + '</td>' +
+        '<td class="vt-value-cell">' +
+        '<input type="text" class="var-input ' + (isUndefined ? "undefined" : "") + '" ' +
+        'data-path="' + escHtml(item.path) + '" ' +
+        'value="' + escHtml(displayVal) + '" ' +
+        'placeholder="' + (isUndefined ? "No Definido — escribe un valor" : "") + '">' +
+        '</td>' +
+        '<td class="vt-type-cell">' + typeStr + '</td>' +
+        '</tr>';
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    // Bind inputs to sync with JSON editor
+    container.querySelectorAll(".var-input").forEach(input => {
+      input.addEventListener("input", () => {
+        syncTableToJson(input.dataset.path, input.value);
+      });
+      input.addEventListener("blur", () => {
+        input.classList.remove("undefined");
+        input.placeholder = "";
+      });
+    });
+
+  } catch (e) {
+    container.innerHTML = '<div class="history-empty">JSON inválido</div>';
+  }
+}
+
+function syncTableToJson(path, value) {
+  try {
+    const vars = JSON.parse(varsEditor.getValue() || "{}");
+    const parts = path.split(".");
+    let current = vars;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!current[parts[i]] || typeof current[parts[i]] !== "object") {
+        current[parts[i]] = {};
+      }
+      current = current[parts[i]];
+    }
+
+    const lastKey = parts[parts.length - 1];
+    // Intentar convertir a número o booleano
+    if (value === "") {
+      current[lastKey] = "No Definido";
+    } else if (value.toLowerCase() === "true") {
+      current[lastKey] = true;
+    } else if (value.toLowerCase() === "false") {
+      current[lastKey] = false;
+    } else if (!isNaN(value) && value.trim() !== "") {
+      current[lastKey] = Number(value);
+    } else {
+      current[lastKey] = value;
+    }
+
+    varsEditor.setValue(JSON.stringify(vars, null, 2));
+    setStatus("↻ Tabla → JSON", "ok");
+
+    // Actualizar badge
+    updateVarBadge(vars);
+  } catch(e) {}
+}
+
+function updateVarBadge(vars) {
+  let count = 0, undef = 0;
+  function walk(obj) {
+    for (const k of Object.keys(obj)) {
+      if (obj[k] === "No Definido" || obj[k] === undefined || obj[k] === null) undef++;
+      else if (typeof obj[k] === "object" && obj[k] !== null) walk(obj[k]);
+      count++;
+    }
+  }
+  if (typeof vars === "object") walk(vars);
+  document.getElementById("varCount").textContent = `${count} vars`;
+  const badge = document.getElementById("varSyncBadge");
+  if (undef > 0) {
+    badge.style.display = "inline";
+    badge.textContent = `⚠ ${undef} sin valor`;
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// ─── Variable Tree ───
+
+function buildVarTree() {
+  const container = document.getElementById("varTreeContainer");
+  try {
+    const vars = JSON.parse(varsEditor.getValue() || "{}");
+    if (Object.keys(vars).length === 0) {
+      container.innerHTML = '<div class="history-empty">No hay variables definidas.</div>';
+      return;
+    }
+    container.innerHTML = renderTree(vars, "");
+  } catch(e) {
+    container.innerHTML = '<div class="history-empty">JSON inválido</div>';
+  }
+}
+
+function renderTree(obj, path) {
+  let html = '<div class="var-tree-children open">';
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      html += '<div class="var-tree-item">' +
+        '<span class="vt-toggle" data-toggle="tree">▾</span>' +
+        '<span class="vt-key">' + escHtml(key) + '</span></div>';
+      html += renderTree(val, path ? path + "." + key : key);
+    } else {
+      const isUndef = val === "No Definido";
+      const display = typeof val === "string" ? '"' + escHtml(val) + '"' : escHtml(String(val));
+      html += '<div class="var-tree-item">' +
+        '<span class="vt-toggle" style="opacity:0;">▸</span>' +
+        '<span class="vt-key">' + escHtml(key) + '</span>' +
+        '<span style="color:var(--text3);margin:0 4px;">:</span>' +
+        '<span class="' + (isUndef ? "vt-str" : (typeof val === "string" ? "vt-str" : "vt-val")) +
+        '" style="' + (isUndef ? "color:var(--orange);font-style:italic;" : "") + '">' +
+        display + '</span></div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
 
 async function renderPreview() {
   const template = templateEditor.getValue();
   const variablesRaw = varsEditor.getValue();
   const outputText = document.getElementById("outputText");
   const outputPreview = document.getElementById("outputPreview");
+  const wrapper = document.getElementById("previewIframeWrapper");
 
   if (!template.trim()) {
     outputText.textContent = "⚠️ Escribe un template";
@@ -87,9 +397,7 @@ async function renderPreview() {
     return;
   }
 
-  // Limpiar highlights de errores anteriores
   clearHighlights();
-
   setStatus("Renderizando...");
 
   try {
@@ -101,38 +409,30 @@ async function renderPreview() {
     const result = await res.json();
 
     if (result.output) {
-      // Mostrar en texto
       outputText.textContent = result.output;
       outputText.className = "preview-body";
+      if (previewTheme === "light") outputText.classList.add("light-theme");
 
-      // Mostrar en iframe
-      const doc = outputPreview.contentDocument ||
-                  outputPreview.contentWindow.document;
+      // Iframe
+      const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
       doc.open();
       doc.write(result.output);
       doc.close();
+      wrapper.classList.add("visible");
 
-      setStatus("✅ OK");
-
-      // Auto-cambio a HTML si el output contiene HTML
+      // Auto-switch a HTML si es necesario
       const trimmed = result.output.trim();
-      if ((trimmed.startsWith("<") || trimmed.startsWith("<html")) &&
-          previewMode === "text") {
+      if ((trimmed.startsWith("<") || trimmed.startsWith("<html")) && previewMode === "text") {
         switchPreview("html");
       }
 
-      // Guardar en historial
+      setStatus("✅ OK");
       saveToHistory(template, variables, result.output);
-      // Construir árbol de variables
-      buildVarTree();
     } else {
-      const errMsg = result.error || "Error desconocido";
-      outputText.textContent = "❌ " + errMsg;
+      outputText.textContent = "❌ " + (result.error || "Error");
       outputText.className = "preview-body error";
       setStatus("Error", "err");
-
-      // Resaltar variables faltantes en el editor
-      highlightMissingVars(template, variables, errMsg);
+      highlightMissingVars(template, variables, result.error);
     }
   } catch (e) {
     outputText.textContent = "❌ Error de conexión: " + e.message;
@@ -141,16 +441,13 @@ async function renderPreview() {
   }
 }
 
-// ─── Resaltado de errores ───
+// ─── Error highlighting ───
 
 function highlightMissingVars(template, variables, errorMsg) {
-  // Limpiar marcas anteriores
   clearHighlights();
-
   if (!errorMsg) return;
   const match = errorMsg.match(/Faltan variables:?\s*(.+)/);
   if (!match) return;
-
   const missing = match[1].split(",").map(v => v.trim());
   const lines = template.split("\n");
   const regex = /\$\{?([a-zA-Z_][a-zA-Z0-9_.]*)\}?/g;
@@ -167,28 +464,22 @@ function highlightMissingVars(template, variables, errorMsg) {
       }
     }
   });
-
   showToast("🔴 Variables faltantes resaltadas en rojo");
 }
 
 function clearHighlights() {
-  const markers = templateEditor.doc.getAllMarks();
-  markers.forEach(m => m.clear());
+  templateEditor.doc.getAllMarks().forEach(m => m.clear());
 }
 
-// ─── Historial (localStorage) ───
+// ─── History ───
 
 function saveToHistory(template, variables, output) {
   const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
-  const entry = {
-    id: ++historyId,
-    name: currentTemplateName,
-    template: template,
-    variables: variables,
-    output: output,
+  history.unshift({
+    id: ++historyId, name: currentTemplateName,
+    template, variables, output,
     date: new Date().toISOString()
-  };
-  history.unshift(entry);
+  });
   if (history.length > 20) history.pop();
   localStorage.setItem("vm_history", JSON.stringify(history));
   renderHistory();
@@ -197,56 +488,26 @@ function saveToHistory(template, variables, output) {
 function renderHistory() {
   const list = document.getElementById("historyList");
   const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
-
   if (!history.length) {
-    list.innerHTML =
-      '<div class="history-empty">' +
-      "Sin historial aún. Los templates se guardan al renderizar." +
-      "</div>";
+    list.innerHTML = '<div class="history-empty">Sin historial aún. Los templates se guardan al renderizar.</div>';
     return;
   }
-
-  list.innerHTML = history
-    .map(h => {
-      const date = new Date(h.date);
-      const time = date.toLocaleTimeString("es-MX", {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      const day = date.toLocaleDateString("es-MX", {
-        day: "numeric",
-        month: "short"
-      });
-      return (
-        '<div class="history-item" data-id="' +
-        h.id +
-        '">' +
-        '<span class="h-name">' +
-        escHtml(h.name || "Sin título") +
-        "</span>" +
-        '<span class="h-date">' +
-        day +
-        " " +
-        time +
-        "</span>" +
-        '<span class="h-del" data-action="delete">✕</span>' +
-        "</div>"
-      );
-    })
-    .join("");
+  list.innerHTML = history.map(h => {
+    const d = new Date(h.date);
+    const time = d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    const day = d.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+    return '<div class="history-item" data-id="' + h.id + '">' +
+      '<span class="h-name">' + escHtml(h.name || "Sin título") + '</span>' +
+      '<span class="h-date">' + day + " " + time + '</span>' +
+      '<span class="h-del" data-action="delete">✕</span></div>';
+  }).join("");
 }
 
-// Event delegation para history list
 document.getElementById("historyList").addEventListener("click", (e) => {
   const item = e.target.closest(".history-item");
   if (!item) return;
   const id = parseInt(item.dataset.id);
-
-  if (e.target.dataset.action === "delete") {
-    deleteHistory(id);
-    return;
-  }
-
+  if (e.target.dataset.action === "delete") { deleteHistory(id); return; }
   restoreHistory(id);
 });
 
@@ -254,7 +515,6 @@ function restoreHistory(id) {
   const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
   const entry = history.find(h => h.id === id);
   if (!entry) return;
-
   templateEditor.setValue(entry.template);
   varsEditor.setValue(JSON.stringify(entry.variables, null, 2));
   currentTemplateName = entry.name;
@@ -270,71 +530,7 @@ function deleteHistory(id) {
   showToast("🗑 Eliminado");
 }
 
-// ─── Árbol de variables ───
-
-function buildVarTree() {
-  const container = document.getElementById("varTreeContainer");
-  try {
-    const vars = JSON.parse(varsEditor.getValue() || "{}");
-    if (Object.keys(vars).length === 0) {
-      container.innerHTML =
-        '<div class="history-empty">No hay variables definidas.</div>';
-      return;
-    }
-    container.innerHTML = renderTree(vars, "");
-  } catch (e) {
-    container.innerHTML =
-      '<div class="history-empty">JSON inválido</div>';
-  }
-}
-
-function renderTree(obj, path) {
-  let html = '<div class="var-tree-children open">';
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
-    if (typeof val === "object" && val !== null && !Array.isArray(val)) {
-      html +=
-        '<div class="var-tree-item">' +
-        '<span class="vt-toggle" data-toggle="tree">▾</span>' +
-        '<span class="vt-key">' +
-        escHtml(key) +
-        "</span></div>";
-      html += renderTree(val, path ? path + "." + key : key);
-    } else {
-      const display =
-        typeof val === "string"
-          ? '"' + escHtml(val) + '"'
-          : escHtml(String(val));
-      html +=
-        '<div class="var-tree-item">' +
-        '<span class="vt-toggle" style="opacity:0;">▸</span>' +
-        '<span class="vt-key">' +
-        escHtml(key) +
-        "</span>" +
-        '<span style="color:var(--text3);margin:0 4px;">:</span>' +
-        '<span class="' +
-        (typeof val === "string" ? "vt-str" : "vt-val") +
-        '">' +
-        display +
-        "</span></div>";
-    }
-  }
-  html += "</div>";
-  return html;
-}
-
-// Delegación para expandir/colapsar árbol
-document.getElementById("varTreeContainer").addEventListener("click", (e) => {
-  const toggle = e.target.closest('[data-toggle="tree"]');
-  if (!toggle) return;
-  const children = toggle.parentElement.nextElementSibling;
-  if (children && children.classList.contains("var-tree-children")) {
-    children.classList.toggle("open");
-    toggle.textContent = children.classList.contains("open") ? "▾" : "▸";
-  }
-});
-
-// ─── Cargar ejemplo ───
+// ─── Examples ───
 
 function loadExample(key) {
   if (!key || !EXAMPLES[key]) return;
@@ -343,31 +539,15 @@ function loadExample(key) {
   varsEditor.setValue(JSON.stringify(ex.vars, null, 2));
   currentTemplateName = ex.name;
   setStatus("✅ " + ex.name + " cargado");
-
-  // Abrir variables si están cerradas
-  const body = document.getElementById("varsBody");
-  const arrow = document.getElementById("varsArrow");
-  if (!body.classList.contains("open")) {
-    body.classList.add("open");
-    arrow.classList.add("open");
-    setTimeout(() => varsEditor.refresh(), 300);
-  }
-
   renderPreview();
 }
 
-// ─── Exportar ───
+// ─── Export / Import ───
 
 function exportTemplate() {
-  const template = templateEditor.getValue();
-  const vars = varsEditor.getValue();
-  // Incrustar variables como comentario HTML
-  const content =
-    template +
-    "\n\n<!-- VARIABLES:\n" +
-    vars +
-    "\n-->";
-  const blob = new Blob([content], { type: "text/plain" });
+  const t = templateEditor.getValue();
+  const v = varsEditor.getValue();
+  const blob = new Blob([t + "\n\n<!-- VARIABLES:\n" + v + "\n-->"], { type: "text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "template.vm";
@@ -376,89 +556,123 @@ function exportTemplate() {
   showToast("⬇️ Exportado como template.vm");
 }
 
-// ─── Importar ───
-
 function importTemplate(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = (e) => {
     let content = e.target.result;
-
-    // Detectar variables incrustadas
-    const varMatch = content.match(/<!-- VARIABLES:\n([\s\S]*?)-->/);
-    if (varMatch) {
-      templateEditor.setValue(
-        content.replace(/<!-- VARIABLES:[\s\S]*?-->/, "").trim()
-      );
-      try {
-        varsEditor.setValue(
-          JSON.stringify(JSON.parse(varMatch[1]), null, 2)
-        );
-      } catch (_) {
-        varsEditor.setValue(varMatch[1]);
-      }
+    const vm = content.match(/<!-- VARIABLES:\n([\s\S]*?)-->/);
+    if (vm) {
+      templateEditor.setValue(content.replace(/<!-- VARIABLES:[\s\S]*?-->/, "").trim());
+      try { varsEditor.setValue(JSON.stringify(JSON.parse(vm[1]), null, 2)); } catch(_) { varsEditor.setValue(vm[1]); }
     } else {
       templateEditor.setValue(content);
     }
-
-    showToast("⬆️ Template importado");
+    showToast("⬆️ Importado");
     setTimeout(renderPreview, 300);
   };
   reader.readAsText(file);
   event.target.value = "";
 }
 
-// ─── Limpiar ───
+// ─── Clear ───
 
 function clearAll() {
   templateEditor.setValue("");
   varsEditor.setValue("{}");
   document.getElementById("outputText").textContent = "Esperando...";
   document.getElementById("outputText").className = "preview-body";
-  const doc =
-    document.getElementById("outputPreview").contentDocument ||
-    document.getElementById("outputPreview").contentWindow.document;
-  doc.open();
-  doc.write("");
-  doc.close();
+  const doc = document.getElementById("outputPreview").contentDocument || document.getElementById("outputPreview").contentWindow.document;
+  doc.open(); doc.write(""); doc.close();
   setStatus("Listo");
   document.getElementById("exampleSelect").value = "";
   clearHighlights();
-  buildVarTree();
+  document.getElementById("varCount").textContent = "0 vars";
+  document.getElementById("varSyncBadge").style.display = "none";
+  document.getElementById("varTableContainer").innerHTML = '<div class="history-empty">Sin variables.</div>';
+  document.getElementById("varTreeContainer").innerHTML = '<div class="history-empty">Sin variables.</div>';
 }
 
 // ═══════════════════════════════════════════════════════
-//  INIT — Registrar eventos al cargar
+//  INIT
 // ═══════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", () => {
 
+  setupCollapsible();
+
   // Preview tabs
-  document.querySelectorAll(".preview-tab").forEach(tab => {
-    tab.addEventListener("click", () => switchPreview(tab.dataset.mode));
-  });
+  document.querySelectorAll(".preview-tab").forEach(tab =>
+    tab.addEventListener("click", () => switchPreview(tab.dataset.mode))
+  );
+
+  // Variables tabs
+  document.querySelectorAll("[data-vars-tab]").forEach(tab =>
+    tab.addEventListener("click", () => {
+      document.querySelectorAll("[data-vars-tab]").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".vars-tab-content").forEach(c => c.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("varsTab" + tab.dataset.varsTab.charAt(0).toUpperCase() + tab.dataset.varsTab.slice(1)).classList.add("active");
+      if (tab.dataset.varsTab === "table") buildVarTable();
+      if (tab.dataset.varsTab === "tree") buildVarTree();
+    })
+  );
 
   // Bottom tabs
-  document.querySelectorAll(".bottom-tab").forEach(tab => {
-    tab.addEventListener("click", () => switchBottomTab(tab.dataset.tab));
-  });
+  document.querySelectorAll(".bottom-tab").forEach(tab =>
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".bottom-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".bottom-tab-content").forEach(c => c.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+    })
+  );
 
-  // Botones
+  // Buttons
   document.getElementById("btnRender").addEventListener("click", renderPreview);
   document.getElementById("btnClear").addEventListener("click", clearAll);
   document.getElementById("btnExport").addEventListener("click", exportTemplate);
   document.getElementById("importFile").addEventListener("change", importTemplate);
+  document.getElementById("previewThemeBtn").addEventListener("click", togglePreviewTheme);
+  document.getElementById("previewWidth").addEventListener("change", (e) => setPreviewWidth(e.target.value));
 
-  // Select de ejemplos
-  document.getElementById("exampleSelect").addEventListener("change", (e) => {
-    loadExample(e.target.value);
+  // Examples
+  document.getElementById("exampleSelect").addEventListener("change", (e) => loadExample(e.target.value));
+
+  // Auto-detect variables: watch template changes
+  templateEditor.on("change", () => {
+    clearTimeout(autoDetectTimer);
+    autoDetectTimer = setTimeout(updateVariablesFromTemplate, 1200);
   });
 
-  // Cargar historial
-  renderHistory();
+  // Sync JSON editor → Table + Tree on JSON changes
+  varsEditor.on("change", () => {
+    try {
+      const vars = JSON.parse(varsEditor.getValue() || "{}");
+      updateVarBadge(vars);
+      // Si la tabla es la vista activa, actualizarla
+      if (document.querySelector('[data-vars-tab="table"]').classList.contains("active")) {
+        buildVarTable();
+      }
+      if (document.querySelector('[data-vars-tab="tree"]').classList.contains("active")) {
+        buildVarTree();
+      }
+    } catch(e) {}
+  });
 
-  // Primer render automático
+  // Variable tree toggle
+  document.getElementById("varTreeContainer").addEventListener("click", (e) => {
+    const toggle = e.target.closest('[data-toggle="tree"]');
+    if (!toggle) return;
+    const children = toggle.parentElement.nextElementSibling;
+    if (children && children.classList.contains("var-tree-children")) {
+      children.classList.toggle("open");
+      toggle.textContent = children.classList.contains("open") ? "▾" : "▸";
+    }
+  });
+
+  // Init
+  renderHistory();
   setTimeout(renderPreview, 500);
 });
