@@ -6,287 +6,213 @@
   <title>Velocity Template Editor</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
-  <!-- CodeMirror 5 desde CDN -->
+  <!-- CodeMirror 5 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/velocity/velocity.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/xml-hint.min.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0a0f;
-      --bg2: #12121a;
-      --bg3: #1a1a2e;
-      --text: #e0e0e0;
-      --text2: #888;
-      --accent: #8b5cf6;
-      --accent-hover: #a78bfa;
-      --cyan: #06b6d4;
+      --bg: #0a0a0f; --bg2: #12121a; --bg3: #1a1a2e;
+      --text: #e0e0e0; --text2: #888; --text3: #555;
+      --accent: #8b5cf6; --accent-hover: #a78bfa;
+      --cyan: #06b6d4; --green: #22c55e; --red: #ef4444;
       --border: rgba(139, 92, 246, 0.15);
-      --radius: 12px;
-      --radius-sm: 8px;
+      --radius: 12px; --radius-sm: 8px;
     }
-
     html, body { height: 100%; }
-
     body {
       font-family: 'Segoe UI', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column;
     }
 
     /* ═══ HEADER ═══ */
     .header {
-      padding: 12px 20px;
-      background: var(--bg2);
+      padding: 10px 16px; background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
     }
-
     .header h1 {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.95rem; font-weight: 700;
       background: linear-gradient(135deg, var(--accent), var(--cyan));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       white-space: nowrap;
     }
-
-    .header-controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-left: auto;
-    }
-
+    .header-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-left: auto; }
     .header-controls select {
-      background: var(--bg3);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 6px 12px;
-      font-size: 0.8rem;
-      outline: none;
-      cursor: pointer;
+      background: var(--bg3); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 5px 10px; font-size: 0.78rem; outline: none; cursor: pointer;
     }
-
-    .header-controls select:focus {
-      border-color: var(--accent);
-    }
-
+    .header-controls select:focus { border-color: var(--accent); }
     .btn {
       background: linear-gradient(135deg, var(--accent), #7c4af5);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 7px 18px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      white-space: nowrap;
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      padding: 6px 14px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: 0.15s; white-space: nowrap;
     }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
-    }
-
-    .btn:active { transform: translateY(0); }
-
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 3px 12px rgba(139,92,246,0.3); }
     .btn-sm {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text2);
-      padding: 6px 12px;
-      font-size: 0.75rem;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text2); padding: 5px 10px; font-size: 0.72rem;
     }
-    .btn-sm:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(139, 92, 246, 0.08);
-    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,92,246,0.08); }
+    .status { font-size: 0.72rem; color: var(--text2); }
+    .status.ok { color: var(--green); }
+    .status.err { color: var(--red); }
+    .shortcut-hint { font-size: 0.68rem; color: var(--text3); }
 
-    .status {
-      font-size: 0.75rem;
-      color: var(--text2);
-    }
-    .status.ok { color: #22c55e; }
-    .status.err { color: #ef4444; }
-
-    .shortcut-hint {
-      font-size: 0.7rem;
-      color: var(--text2);
-      opacity: 0.6;
-    }
-
-    /* ═══ MAIN SPLIT ═══ */
+    /* ═══ MAIN LAYOUT ═══ */
     .main {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-      gap: 1px;
-      background: var(--border);
+      display: flex; flex: 1; min-height: 0; gap: 1px; background: var(--border);
     }
-
     .panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg);
-      min-width: 0;
+      flex: 1; display: flex; flex-direction: column;
+      background: var(--bg); min-width: 0;
     }
-
     .panel-header {
-      padding: 8px 16px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--accent);
-      background: var(--bg2);
+      padding: 6px 14px; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--accent); background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
-
     .panel-header .badge {
-      font-size: 0.6rem;
-      background: rgba(139, 92, 246, 0.15);
-      color: var(--accent);
-      padding: 1px 8px;
-      border-radius: 10px;
-      text-transform: none;
-      letter-spacing: 0;
+      font-size: 0.58rem; background: rgba(139,92,246,0.15);
+      color: var(--accent); padding: 1px 7px; border-radius: 10px;
+      text-transform: none; letter-spacing: 0;
     }
 
-    /* Editor panel */
-    .editor-panel { border-right: none; }
+    /* Editor */
+    .CodeMirror { height: 100% !important; font-size: 13px; line-height: 1.6; }
+    .CodeMirror-gutters { background: var(--bg2) !important; border-right: 1px solid var(--border) !important; }
+    .cm-s-material-darker .CodeMirror-activeline-background { background: rgba(139,92,246,0.05) !important; }
 
-    .CodeMirror {
-      height: 100% !important;
-      font-size: 13px;
-      line-height: 1.6;
+    /* Error highlight */
+    .cm-missing-var { background: rgba(239,68,68,0.2); border-bottom: 2px wavy var(--red); }
+
+    /* Variables section */
+    .vars-section { border-top: 1px solid var(--border); flex-shrink: 0; }
+    .vars-toggle {
+      width: 100%; padding: 5px 14px; background: var(--bg2);
+      border: none; color: var(--text2); font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 1px;
+      cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit;
     }
+    .vars-toggle:hover { color: var(--accent); }
+    .vars-toggle .arrow { transition: transform 0.2s; }
+    .vars-toggle .arrow.open { transform: rotate(90deg); }
+    .vars-body { height: 0; overflow: hidden; transition: height 0.25s ease; }
+    .vars-body.open { height: 140px; }
+    .vars-body .CodeMirror { height: 140px !important; }
 
-    .CodeMirror-gutters {
-      background: var(--bg2) !important;
-      border-right: 1px solid var(--border) !important;
-    }
-
-    /* Variables panel (collapsible) */
-    .variables-section {
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .variables-toggle {
-      width: 100%;
-      padding: 6px 16px;
-      background: var(--bg2);
-      border: none;
-      color: var(--text2);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: inherit;
-    }
-    .variables-toggle:hover { color: var(--accent); }
-    .variables-toggle .arrow { transition: transform 0.2s; }
-    .variables-toggle .arrow.open { transform: rotate(90deg); }
-
-    .variables-body {
-      height: 0;
-      overflow: hidden;
-      transition: height 0.25s ease;
-    }
-    .variables-body.open { height: 150px; }
-
-    .variables-body .CodeMirror {
-      height: 150px !important;
-    }
-
-    /* Preview panel */
-    .preview-panel { border-left: none; }
-
-    .preview-tabs {
-      display: flex;
-      gap: 0;
-      margin-left: auto;
-    }
+    /* Preview */
+    .preview-tabs { display: flex; gap: 0; margin-left: auto; }
     .preview-tab {
-      padding: 2px 10px;
-      font-size: 0.65rem;
-      color: var(--text2);
-      cursor: pointer;
-      border-radius: 4px 4px 0 0;
-      transition: 0.15s;
+      padding: 2px 9px; font-size: 0.62rem; color: var(--text2);
+      cursor: pointer; border-radius: 4px 4px 0 0; transition: 0.15s;
     }
-    .preview-tab.active {
-      color: var(--accent);
-      background: rgba(139, 92, 246, 0.08);
-    }
+    .preview-tab.active { color: var(--accent); background: rgba(139,92,246,0.08); }
     .preview-tab:hover { color: var(--text); }
-
     .preview-body {
-      flex: 1;
-      overflow: auto;
-      padding: 16px;
-      background: var(--bg);
-      font-size: 0.85rem;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
+      flex: 1; overflow: auto; padding: 14px;
+      font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
     }
-    .preview-body.error {
-      color: #ef4444;
+    .preview-body.error { color: var(--red); }
+    .preview-body iframe { width: 100%; height: 100%; border: none; background: #fff; border-radius: 4px; }
+
+    /* ═══ BOTTOM TABS (History / Variables Tree / Help) ═══ */
+    .bottom-panel { flex-shrink: 0; border-top: 1px solid var(--border); }
+    .bottom-tabs {
+      display: flex; background: var(--bg2); border-bottom: 1px solid var(--border);
+    }
+    .bottom-tab {
+      padding: 6px 16px; font-size: 0.7rem; color: var(--text2);
+      cursor: pointer; border-bottom: 2px solid transparent; transition: 0.15s;
+    }
+    .bottom-tab:hover { color: var(--text); }
+    .bottom-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .bottom-body {
+      height: 0; overflow: hidden; transition: height 0.25s ease; background: var(--bg2);
+    }
+    .bottom-body.open { height: 160px; }
+    .bottom-content {
+      padding: 10px 14px; height: 100%; overflow-y: auto;
+      font-size: 0.78rem; color: var(--text2);
     }
 
-    .preview-body iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: #fff;
-      border-radius: 4px;
+    /* History items */
+    .history-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 10px; border-bottom: 1px solid var(--border); cursor: pointer;
     }
+    .history-item:hover { background: rgba(139,92,246,0.05); }
+    .history-item .h-name { font-weight: 600; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-item .h-date { font-size: 0.65rem; color: var(--text3); white-space: nowrap; }
+    .history-item .h-del { color: var(--red); font-size: 0.7rem; cursor: pointer; padding: 2px 6px; }
+    .history-item .h-del:hover { background: rgba(239,68,68,0.15); border-radius: 4px; }
+    .history-empty { padding: 20px; text-align: center; color: var(--text3); font-style: italic; }
 
-    /* ═══ RESPONSIVE ═══ */
+    /* Variable tree */
+    .var-tree-item {
+      padding: 2px 0; cursor: default; display: flex; align-items: center; gap: 4px;
+    }
+    .var-tree-item .vt-toggle {
+      width: 14px; text-align: center; cursor: pointer; color: var(--accent); font-size: 0.6rem;
+    }
+    .var-tree-item .vt-key { color: var(--cyan); }
+    .var-tree-item .vt-val { color: var(--green); }
+    .var-tree-item .vt-str { color: #e2e8f0; }
+    .var-tree-children { padding-left: 16px; display: none; }
+    .var-tree-children.open { display: block; }
+
+    /* Export/Import buttons in header */
+    .btn-icon {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text2); padding: 5px 8px; font-size: 0.75rem;
+      border-radius: var(--radius-sm); cursor: pointer;
+      line-height: 1;
+    }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Help content */
+    .help-section { margin-bottom: 10px; }
+    .help-section h4 { color: var(--accent); font-size: 0.75rem; margin-bottom: 4px; }
+    .help-section code {
+      background: var(--bg3); padding: 1px 6px; border-radius: 3px;
+      font-size: 0.72rem; color: var(--cyan);
+    }
+    .help-section p { margin-bottom: 4px; }
+
+    /* Notification toast */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 16px;
+      font-size: 0.78rem; color: var(--text);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transform: translateY(100px); opacity: 0;
+      transition: 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .main {
-        flex-direction: column;
-      }
-      .panel { min-height: 300px; }
-      .header h1 { font-size: 0.85rem; }
-      .header-controls select { font-size: 0.7rem; padding: 4px 8px; }
-      .btn { font-size: 0.7rem; padding: 5px 12px; }
-    }
-
-    @media (max-width: 480px) {
-      .header { padding: 8px 12px; gap: 8px; }
-      .header h1 { width: 100%; }
-      .header-controls { margin-left: 0; width: 100%; }
-      .shortcut-hint { display: none; }
+      .main { flex-direction: column; }
+      .panel { min-height: 250px; }
+      .header h1 { font-size: 0.8rem; }
+      .bottom-body.open { height: 200px; }
     }
   </style>
 </head>
@@ -297,48 +223,49 @@
     <h1>⚡ Velocity Editor</h1>
     <div class="header-controls">
       <select id="exampleSelect" onchange="loadExample(this.value)">
-        <option value="">📝 Cargar ejemplo...</option>
+        <option value="">📝 Ejemplos...</option>
         <option value="basic">Hola Mundo</option>
         <option value="product">Ficha de producto</option>
-        <option value="loop">Lista con #foreach</option>
+        <option value="loop">Lista #foreach</option>
         <option value="conditions">Condicionales #if</option>
         <option value="email">Email HTML</option>
       </select>
       <button class="btn" onclick="renderPreview()">▶ Render</button>
+      <button class="btn-sm" onclick="exportTemplate()" title="Exportar .vm">⬇</button>
+      <label class="btn-sm" style="cursor:pointer;" title="Importar .vm">
+        ⬆<input type="file" id="importFile" accept=".vm,.txt,.html" style="display:none" onchange="importTemplate(event)">
+      </label>
       <button class="btn-sm" onclick="clearAll()">🗑</button>
       <span class="status" id="status">Listo</span>
       <span class="shortcut-hint">Ctrl+Enter</span>
     </div>
   </header>
 
-  <!-- ═══ MAIN SPLIT ═══ -->
+  <!-- ═══ MAIN ═══ -->
   <div class="main">
     <!-- LEFT: Editor -->
-    <div class="panel editor-panel">
+    <div class="panel">
       <div class="panel-header">
-        📄 Template Velocity
-        <span class="badge">.vm</span>
+        📄 Template <span class="badge">.vm</span>
       </div>
       <textarea id="template">Hola $nombre!</textarea>
-
-      <!-- Variables (colapsable) -->
-      <div class="variables-section">
-        <button class="variables-toggle" id="varsToggle" onclick="toggleVars()">
+      <div class="vars-section">
+        <button class="vars-toggle" onclick="toggleVars()">
           <span class="arrow" id="varsArrow">▶</span> Variables JSON
         </button>
-        <div class="variables-body" id="varsBody">
+        <div class="vars-body" id="varsBody">
           <textarea id="variables">{ "nombre": "Artick" }</textarea>
         </div>
       </div>
     </div>
 
     <!-- RIGHT: Preview -->
-    <div class="panel preview-panel">
+    <div class="panel">
       <div class="panel-header">
         🖼 Resultado
         <div class="preview-tabs">
-          <span class="preview-tab active" id="tabText" onclick="switchPreview('text')">Texto</span>
-          <span class="preview-tab" id="tabHtml" onclick="switchPreview('html')">HTML</span>
+          <span class="preview-tab active" onclick="switchPreview('text')">Texto</span>
+          <span class="preview-tab" onclick="switchPreview('html')">HTML</span>
         </div>
       </div>
       <div class="preview-body" id="outputText">Presiona ▶ Render o Ctrl+Enter</div>
@@ -346,8 +273,60 @@
     </div>
   </div>
 
+  <!-- ═══ BOTTOM PANEL ═══ -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <span class="bottom-tab active" data-tab="history" onclick="switchBottomTab('history')">📋 Historial</span>
+      <span class="bottom-tab" data-tab="vartree" onclick="switchBottomTab('vartree')">🌳 Variables</span>
+      <span class="bottom-tab" data-tab="help" onclick="switchBottomTab('help')">❓ Ayuda</span>
+    </div>
+
+    <!-- History -->
+    <div class="bottom-body open" id="panel-history">
+      <div class="bottom-content" id="historyList">
+        <div class="history-empty">Sin historial aún. Los templates se guardan automáticamente al renderizar.</div>
+      </div>
+    </div>
+
+    <!-- Variable Tree -->
+    <div class="bottom-body" id="panel-vartree">
+      <div class="bottom-content" id="varTreeContainer">
+        <div class="history-empty">Abre el panel de variables y haz Render para ver el árbol.</div>
+      </div>
+    </div>
+
+    <!-- Help -->
+    <div class="bottom-body" id="panel-help">
+      <div class="bottom-content">
+        <div class="help-section">
+          <h4>📝 Sintaxis Velocity</h4>
+          <p><code>$variable</code> — Variable simple</p>
+          <p><code>$objeto.propiedad</code> — Variable anidada</p>
+          <p><code>${variable}</code> — Variable con llaves</p>
+        </div>
+        <div class="help-section">
+          <h4>🔄 Directivas</h4>
+          <p><code>#if( $x ) ... #else ... #end</code> — Condicional</p>
+          <p><code>#foreach( $item in $lista ) ... #end</code> — Bucle</p>
+          <p><code>#set( $x = 42 )</code> — Asignación</p>
+        </div>
+        <div class="help-section">
+          <h4>⌨️ Atajos</h4>
+          <p><code>Ctrl+Enter</code> — Renderizar</p>
+          <p><code>$ + Tab</code> — Autocompletar variable</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
   <script>
-    // ─── Inicializar CodeMirror ───
+    // ═══════════════════════════════════════════════════════
+    //  CodeMirror
+    // ═══════════════════════════════════════════════════════
+
     const templateEditor = CodeMirror.fromTextArea(document.getElementById("template"), {
       mode: "velocity",
       theme: "material-darker",
@@ -373,69 +352,137 @@
       }
     });
 
-    // ─── Live preview (debounced) ───
-    let debounceTimer;
-    templateEditor.on("change", () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(renderPreview, 800);
-    });
-    varsEditor.on("change", () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(renderPreview, 800);
+    // ═══════════════════════════════════════════════════════
+    //  Autocompletado de variables
+    // ═══════════════════════════════════════════════════════
+
+    CodeMirror.registerHelper("hint", "velocityVars", (cm) => {
+      const cursor = cm.getCursor();
+      const line = cm.getLine(cursor.line);
+      const token = cm.getTokenAt(cursor);
+
+      // Get all variable names from current JSON context
+      let vars = [];
+      try {
+        const json = JSON.parse(varsEditor.getValue() || "{}");
+        function extractKeys(obj, prefix) {
+          for (const key of Object.keys(obj)) {
+            const path = prefix ? prefix + "." + key : key;
+            vars.push("$" + path);
+            if (typeof obj[key] === "object" && obj[key] !== null && !Array.isArray(obj[key])) {
+              extractKeys(obj[key], path);
+            }
+            if (Array.isArray(obj[key])) {
+              vars.push("$" + path);
+              vars.push("${" + path + ".size()}");
+            }
+          }
+        }
+        extractKeys(json, "");
+      } catch(e) {}
+
+      if (!vars.length) {
+        vars = ["$variable", "${variable}", "$objeto.propiedad"];
+      }
+
+      // Filter based on what user typed after $
+      const from = { line: cursor.line, ch: token.start };
+      const to = { line: cursor.line, ch: token.end };
+      const prefix = line.slice(token.start, cursor.ch);
+      const list = vars.filter(v => v.includes(prefix)).slice(0, 20);
+
+      return list.length ? { list, from, to } : null;
     });
 
-    // ─── Toggle variables ───
+    templateEditor.on("inputRead", (cm, change) => {
+      if (change.text && change.text[0] === "$") {
+        CodeMirror.showHint(cm, CodeMirror.hint.velocityVars, { completeSingle: false });
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════
+    //  Live preview (debounced)
+    // ═══════════════════════════════════════════════════════
+
+    let debounceTimer;
+    templateEditor.on("change", () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(renderPreview, 800); });
+    varsEditor.on("change", () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(renderPreview, 800); });
+
+    // ═══════════════════════════════════════════════════════
+    //  State
+    // ═══════════════════════════════════════════════════════
+
+    let previewMode = "text";
+    let historyId = 0;
+    let currentTemplateName = "Sin título";
+
+    // ═══════════════════════════════════════════════════════
+    //  Functions
+    // ═══════════════════════════════════════════════════════
+
     function toggleVars() {
       const body = document.getElementById("varsBody");
       const arrow = document.getElementById("varsArrow");
       body.classList.toggle("open");
       arrow.classList.toggle("open");
-      varsEditor.refresh();
+      setTimeout(() => varsEditor.refresh(), 300);
     }
-
-    // ─── Switch preview tab ───
-    let previewMode = "text";
 
     function switchPreview(mode) {
       previewMode = mode;
-      document.getElementById("tabText").classList.toggle("active", mode === "text");
-      document.getElementById("tabHtml").classList.toggle("active", mode === "html");
+      document.querySelectorAll(".preview-tab").forEach(t => t.classList.toggle("active", t.textContent.trim().toLowerCase().includes(mode)));
       document.getElementById("outputText").style.display = mode === "text" ? "block" : "none";
       document.getElementById("outputPreview").style.display = mode === "html" ? "block" : "none";
     }
 
-    // ─── Render preview ───
+    function switchBottomTab(tab) {
+      document.querySelectorAll(".bottom-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+      document.querySelectorAll(".bottom-body").forEach(b => b.classList.remove("open"));
+      document.getElementById("panel-" + tab).classList.add("open");
+      if (tab === "vartree") buildVarTree();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2500);
+    }
+
+    function setStatus(text, type) {
+      const el = document.getElementById("status");
+      el.textContent = text; el.className = "status" + (type ? " " + type : "");
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  RENDER
+    // ═══════════════════════════════════════════════════════
+
     async function renderPreview() {
       const template = templateEditor.getValue();
       let variablesRaw = varsEditor.getValue();
-
       const outputText = document.getElementById("outputText");
       const outputPreview = document.getElementById("outputPreview");
-      const status = document.getElementById("status");
 
       if (!template.trim()) {
-        outputText.textContent = "⚠️ Escribe un template";
-        outputText.className = "preview-body error";
-        setStatus("Vacío", "err");
-        return;
+        outputText.textContent = "⚠️ Escribe un template"; outputText.className = "preview-body error";
+        setStatus("Vacío", "err"); return;
       }
 
       let variables;
-      try {
-        variables = JSON.parse(variablesRaw || "{}");
-      } catch (e) {
-        outputText.textContent = "❌ JSON inválido: " + e.message;
-        outputText.className = "preview-body error";
-        setStatus("JSON error", "err");
-        return;
+      try { variables = JSON.parse(variablesRaw || "{}"); }
+      catch (e) {
+        outputText.textContent = "❌ JSON inválido: " + e.message; outputText.className = "preview-body error";
+        setStatus("JSON error", "err"); return;
       }
 
-      setStatus("Renderizando...");
+      // Limpiar highlights previos
+      clearHighlights();
 
+      setStatus("Renderizando...");
       try {
         const res = await fetch("/preview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ template, variables })
         });
         const result = await res.json();
@@ -443,77 +490,254 @@
         if (result.output) {
           outputText.textContent = result.output;
           outputText.className = "preview-body";
-
-          // Render en iframe
           const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
-          doc.open();
-          doc.write(result.output);
-          doc.close();
-
+          doc.open(); doc.write(result.output); doc.close();
           setStatus("✅ OK");
 
-          // Auto-switch a HTML si el output contiene etiquetas HTML
-          if (result.output.trim().startsWith("<") && previewMode === "text") {
-            switchPreview("html");
-          }
+          if (result.output.trim().startsWith("<") && previewMode === "text") switchPreview("html");
+
+          // Guardar en historial
+          saveToHistory(template, variables, result.output);
+
+          // Construir árbol de variables
+          buildVarTree();
         } else {
-          outputText.textContent = "❌ " + (result.error || "Error desconocido");
-          outputText.className = "preview-body error";
+          outputText.textContent = "❌ " + (result.error || "Error"); outputText.className = "preview-body error";
           setStatus("Error", "err");
+          highlightMissingVars(template, variables, result.error);
         }
       } catch (e) {
-        outputText.textContent = "❌ Error de conexión: " + e.message;
-        outputText.className = "preview-body error";
+        outputText.textContent = "❌ Error de conexión: " + e.message; outputText.className = "preview-body error";
         setStatus("Offline", "err");
       }
     }
 
-    function setStatus(text, type) {
-      const el = document.getElementById("status");
-      el.textContent = text;
-      el.className = "status" + (type ? " " + type : "");
+    // ═══════════════════════════════════════════════════════
+    //  ERROR HIGHLIGHTING
+    // ═══════════════════════════════════════════════════════
+
+    function highlightMissingVars(template, variables, errorMsg) {
+      const markers = templateEditor.doc.getAllMarks();
+      markers.forEach(m => m.clear());
+
+      if (!errorMsg) return;
+      const match = errorMsg.match(/Faltan variables:?\s*(.+)/);
+      if (!match) return;
+
+      const missing = match[1].split(",").map(v => v.trim());
+      const lines = template.split("\n");
+      const regex = /\$\{?([a-zA-Z_][a-zA-Z0-9_.]*)\}?/g;
+
+      lines.forEach((line, lineNum) => {
+        let m;
+        while ((m = regex.exec(line)) !== null) {
+          if (missing.includes(m[1])) {
+            templateEditor.markText(
+              { line: lineNum, ch: m.index },
+              { line: lineNum, ch: m.index + m[0].length },
+              { className: "cm-missing-var" }
+            );
+          }
+        }
+      });
+
+      showToast("🔴 Variables faltantes resaltadas en rojo");
     }
 
-    // ─── Ejemplos ───
+    function clearHighlights() {
+      const markers = templateEditor.doc.getAllMarks();
+      markers.forEach(m => m.clear());
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  HISTORY (localStorage)
+    // ═══════════════════════════════════════════════════════
+
+    function saveToHistory(template, variables, output) {
+      const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
+      const entry = {
+        id: ++historyId,
+        name: currentTemplateName,
+        template, variables, output,
+        date: new Date().toISOString()
+      };
+      history.unshift(entry);
+      // Keep max 20 entries
+      if (history.length > 20) history.pop();
+      localStorage.setItem("vm_history", JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById("historyList");
+      const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
+      if (!history.length) {
+        list.innerHTML = '<div class="history-empty">Sin historial aún. Los templates se guardan automáticamente al renderizar.</div>';
+        return;
+      }
+      list.innerHTML = history.map(h => {
+        const date = new Date(h.date);
+        const time = date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+        const day = date.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+        return `<div class="history-item" onclick="restoreHistory(${h.id})">
+          <span class="h-name">${escHtml(h.name || "Sin título")}</span>
+          <span class="h-date">${day} ${time}</span>
+          <span class="h-del" onclick="event.stopPropagation(); deleteHistory(${h.id})">✕</span>
+        </div>`;
+      }).join("");
+    }
+
+    function restoreHistory(id) {
+      const history = JSON.parse(localStorage.getItem("vm_history") || "[]");
+      const entry = history.find(h => h.id === id);
+      if (!entry) return;
+      templateEditor.setValue(entry.template);
+      varsEditor.setValue(JSON.stringify(entry.variables, null, 2));
+      currentTemplateName = entry.name;
+      showToast("📋 Template restaurado");
+      setTimeout(renderPreview, 300);
+    }
+
+    function deleteHistory(id) {
+      let history = JSON.parse(localStorage.getItem("vm_history") || "[]");
+      history = history.filter(h => h.id !== id);
+      localStorage.setItem("vm_history", JSON.stringify(history));
+      renderHistory();
+      showToast("🗑 Eliminado");
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  VARIABLE TREE
+    // ═══════════════════════════════════════════════════════
+
+    function buildVarTree() {
+      const container = document.getElementById("varTreeContainer");
+      try {
+        const vars = JSON.parse(varsEditor.getValue() || "{}");
+        if (Object.keys(vars).length === 0) {
+          container.innerHTML = '<div class="history-empty">No hay variables definidas.</div>';
+          return;
+        }
+        container.innerHTML = renderTree(vars, "");
+      } catch(e) {
+        container.innerHTML = '<div class="history-empty">JSON inválido — no se puede mostrar el árbol.</div>';
+      }
+    }
+
+    function renderTree(obj, path) {
+      let html = '<div class="var-tree-children open">';
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        const fullPath = path ? path + "." + key : key;
+        if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+          html += `<div class="var-tree-item">
+            <span class="vt-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent = this.textContent === '▸' ? '▾' : '▸'">▾</span>
+            <span class="vt-key">${escHtml(key)}</span>
+          </div>`;
+          html += renderTree(val, fullPath);
+        } else {
+          const display = typeof val === "string" ? `"${escHtml(val)}"` : escHtml(String(val));
+          html += `<div class="var-tree-item">
+            <span class="vt-toggle" style="opacity:0;">▸</span>
+            <span class="vt-key">${escHtml(key)}</span>
+            <span style="color:var(--text3);margin:0 4px;">:</span>
+            <span class="${typeof val === 'string' ? 'vt-str' : 'vt-val'}">${display}</span>
+          </div>`;
+        }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  EXPORT / IMPORT
+    // ═══════════════════════════════════════════════════════
+
+    function exportTemplate() {
+      const template = templateEditor.getValue();
+      const vars = varsEditor.getValue();
+      const content = template + "\n\n<!-- VARIABLES:\n" + vars + "\n-->";
+      const blob = new Blob([content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "template.vm";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast("⬇️ Template exportado como .vm");
+    }
+
+    function importTemplate(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        let content = e.target.result;
+
+        // Check if it has embedded variables
+        const varMatch = content.match(/<!-- VARIABLES:\n([\s\S]*?)-->/);
+        if (varMatch) {
+          templateEditor.setValue(content.replace(/<!-- VARIABLES:[\s\S]*?-->/, "").trim());
+          try {
+            varsEditor.setValue(JSON.stringify(JSON.parse(varMatch[1]), null, 2));
+          } catch(_) {
+            varsEditor.setValue(varMatch[1]);
+          }
+        } else {
+          templateEditor.setValue(content);
+        }
+        showToast("⬆️ Template importado");
+        setTimeout(renderPreview, 300);
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  EXAMPLES
+    // ═══════════════════════════════════════════════════════
+
     const EXAMPLES = {
       basic: {
+        name: "Hola Mundo",
         template: "¡Hola $nombre! Bienvenido a $sitio.\n\nHoy es $fecha.",
         vars: { nombre: "Artick", sitio: "artickone.com", fecha: "julio 2026" }
       },
       product: {
+        name: "Ficha de producto",
         template: `<div class="producto">\n  <h2>$producto.nombre</h2>\n  <p class="precio">$${producto.precio}</p>\n  <p>$producto.descripcion</p>\n  <p>Stock: $producto.stock unidades</p>\n</div>`,
-        vars: { producto: { nombre: "Media Kit Pro", precio: "29.99", descripcion: "Plantilla profesional para streams", stock: 42 } }
+        vars: { producto: { nombre: "Media Kit Pro", precio: "29.99", descripcion: "Plantilla profesional", stock: 42 } }
       },
       loop: {
-        template: `<h3>$titulo</h3>\n<ul>\n#foreach( $item in $lista )\n  <li>$item</li>\n#end\n</ul>\n\n<p>Total: ${lista.size()} items</p>`,
-        vars: { titulo: "Últimos lanzamientos", lista: ["Velocity Editor", "Template Studio", "Render Pro", "Media Kit"] }
+        name: "Lista #foreach",
+        template: `<h3>$titulo</h3>\n<ul>\n#foreach( $item in $lista )\n  <li>$item</li>\n#end\n</ul>\n<p>Total: ${lista.size()} items</p>`,
+        vars: { titulo: "Últimos lanzamientos", lista: ["Velocity Editor", "Template Studio", "Render Pro"] }
       },
       conditions: {
-        template: `<h1>Bienvenido, $usuario</h1>\n\n#if( $premium == true )\n  <p class="premium">🌟 Gracias por ser premium</p>\n  <p>Descuento: $descuento%</p>\n#else\n  <p class="free">💡 Hazte premium por $precio/mes</p>\n#end\n\n#set( $total = $precio * 12 )\n<p>Plan anual: \$${total}</p>`,
-        vars: { usuario: "Artick", premium: false, precio: 9.99, descuento: 20 }
+        name: "Condicionales #if",
+        template: `<h1>Bienvenido, $usuario</h1>\n#if( $premium )\n  <p class="premium">🌟 Eres premium</p>\n#else\n  <p class="free">💡 Plan gratis — hazte premium por $precio/mes</p>\n#end`,
+        vars: { usuario: "Artick", premium: false, precio: 9.99 }
       },
       email: {
-        template: `<html>\n<body style="font-family:Arial;padding:20px;">\n  <h1 style="color:#8b5cf6;">¡Hola, $nombre!</h1>\n  <p>Gracias por tu interés en <strong>$producto</strong>.</p>\n\n  #if( $oferta )\n  <div style="background:#f0f0ff;padding:15px;border-radius:8px;">\n    <h3>🎉 Oferta especial</h3>\n    <p>Usa el código <strong>$codigo</strong> y obtén $descuento% de descuento.</p>\n  </div>\n  #end\n\n  <hr style="margin:20px 0;">\n  <p style="color:#888;">Saludos,<br>El equipo de $empresa</p>\n</body>\n</html>`,
+        name: "Email HTML",
+        template: `<html><body style="font-family:Arial;padding:20px;">\n<h1 style="color:#8b5cf6;">¡Hola, $nombre!</h1>\n<p>Gracias por tu interés en <strong>$producto</strong>.</p>\n#if( $oferta )\n<div style="background:#f0f0ff;padding:15px;border-radius:8px;">\n<h3>🎉 Oferta especial</h3>\n<p>Usa el código <strong>$codigo</strong> y obtén $descuento% desc.</p>\n</div>\n#end\n<hr>\n<p style="color:#888;">Saludos,<br>El equipo de $empresa</p>\n</body></html>`,
         vars: { nombre: "Artick", producto: "Velocity Editor Pro", oferta: true, codigo: "ARTICK20", descuento: 20, empresa: "Template Studio" }
       }
     };
+
+    document.querySelectorAll(".bottom-tab").forEach(t => {
+      t.addEventListener("click", () => switchBottomTab(t.dataset.tab));
+    });
 
     function loadExample(key) {
       if (!key || !EXAMPLES[key]) return;
       const ex = EXAMPLES[key];
       templateEditor.setValue(ex.template);
       varsEditor.setValue(JSON.stringify(ex.vars, null, 2));
-      setStatus("✅ " + key + " cargado");
-
-      // Auto-abrir variables si están cerradas
+      currentTemplateName = ex.name;
+      setStatus("✅ " + ex.name + " cargado");
       const body = document.getElementById("varsBody");
       const arrow = document.getElementById("varsArrow");
-      if (!body.classList.contains("open")) {
-        body.classList.add("open");
-        arrow.classList.add("open");
-        setTimeout(() => varsEditor.refresh(), 300);
-      }
-
+      if (!body.classList.contains("open")) { body.classList.add("open"); arrow.classList.add("open"); setTimeout(() => varsEditor.refresh(), 300); }
       renderPreview();
     }
 
@@ -526,9 +750,17 @@
       doc.open(); doc.write(""); doc.close();
       setStatus("Listo");
       document.getElementById("exampleSelect").value = "";
+      clearHighlights();
+      buildVarTree();
     }
 
-    // ─── Primer render automático ───
+    function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+    // ═══════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════
+
+    renderHistory();
     setTimeout(renderPreview, 500);
   </script>
 </body>
