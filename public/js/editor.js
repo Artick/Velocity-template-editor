@@ -100,10 +100,4 @@ varsEditor.on("change", () => {
 });
 
 // ─── Refresh vars editor al abrir panel colapsable ───
-document.getElementById("varsToggle").addEventListener("click", () => {
-  const body = document.getElementById("varsBody");
-  const arrow = document.getElementById("varsArrow");
-  body.classList.toggle("open");
-  arrow.classList.toggle("open");
-  setTimeout(() => varsEditor.refresh(), 300);
-});
+// Ahora manejado por setupCollapsible() en app.js

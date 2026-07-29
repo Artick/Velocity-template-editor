@@ -36,8 +36,16 @@ function setupCollapsible() {
       const body = document.getElementById(panelId);
       const arrow = btn.querySelector(".collapse-arrow");
       if (!body) return;
+      const wasClosed = body.classList.contains("closed");
       body.classList.toggle("closed");
       if (arrow) arrow.classList.toggle("closed");
+      // Refresh CodeMirror cuando se abre un panel
+      if (wasClosed) {
+        setTimeout(() => {
+          if (panelId === "varsPanel") varsEditor.refresh();
+          if (panelId === "templatePanel") templateEditor.refresh();
+        }, 350);
+      }
     });
   });
 }

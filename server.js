@@ -25,7 +25,7 @@ app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com; " +
     "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
     "font-src 'self' https://cdnjs.cloudflare.com data:; " +
     "frame-src 'self' https:; " +
