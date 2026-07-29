@@ -3,230 +3,419 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Editor de Plantillas Velocity</title>
+  <title>Velocity Template Editor</title>
+
+  <!-- CodeMirror 5 desde CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/velocity/velocity.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css">
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #12121a;
+      --bg3: #1a1a2e;
+      --text: #e0e0e0;
+      --text2: #888;
+      --accent: #8b5cf6;
+      --accent-hover: #a78bfa;
+      --cyan: #06b6d4;
+      --border: rgba(139, 92, 246, 0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    html, body { height: 100%; }
+
     body {
       font-family: 'Segoe UI', -apple-system, sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
-      padding: 24px;
-      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
+    /* ═══ HEADER ═══ */
+    .header {
+      padding: 12px 20px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    .header h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      white-space: nowrap;
     }
 
-    .subtitle {
-      color: #888;
-      margin-bottom: 32px;
-      font-size: 0.9rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
-
-    .editor-panel {
-      background: #12121a;
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .editor-panel h2 {
-      font-size: 0.85rem;
-      color: #8b5cf6;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    textarea {
-      width: 100%;
-      height: 300px;
-      background: #1a1a2e;
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 8px;
-      color: #e0e0e0;
-      font-family: 'Consolas', 'Monaco', monospace;
-      font-size: 0.85rem;
-      padding: 12px;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-
-    textarea:focus {
-      border-color: #8b5cf6;
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-    }
-
-    .output-panel {
-      background: #12121a;
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .output-panel h2 {
-      font-size: 0.85rem;
-      color: #8b5cf6;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    #outputText {
-      background: #1a1a2e;
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 8px;
-      padding: 12px;
-      min-height: 100px;
-      max-height: 200px;
-      overflow: auto;
-      font-family: 'Consolas', 'Monaco', monospace;
-      font-size: 0.85rem;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #e0e0e0;
-    }
-
-    #outputText.error {
-      color: #ef4444;
-      border-color: rgba(239, 68, 68, 0.3);
-    }
-
-    #outputPreview {
-      width: 100%;
-      height: 300px;
-      border: 1px solid rgba(139, 92, 246, 0.15);
-      border-radius: 8px;
-      margin-top: 12px;
-      background: #fff;
-    }
-
-    .toolbar {
+    .header-controls {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       align-items: center;
-      margin-bottom: 24px;
       flex-wrap: wrap;
-    }
-
-    button {
-      background: linear-gradient(135deg, #8b5cf6, #7c4af5);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 24px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-
-    .btn-example {
-      background: transparent;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      color: #8b5cf6;
-      font-size: 0.8rem;
-      padding: 8px 16px;
-    }
-
-    .btn-example:hover {
-      background: rgba(139, 92, 246, 0.1);
-    }
-
-    .status {
-      color: #888;
-      font-size: 0.8rem;
       margin-left: auto;
     }
 
+    .header-controls select {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .header-controls select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), #7c4af5);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 18px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-sm {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+    .btn-sm:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(139, 92, 246, 0.08);
+    }
+
+    .status {
+      font-size: 0.75rem;
+      color: var(--text2);
+    }
     .status.ok { color: #22c55e; }
     .status.err { color: #ef4444; }
 
+    .shortcut-hint {
+      font-size: 0.7rem;
+      color: var(--text2);
+      opacity: 0.6;
+    }
+
+    /* ═══ MAIN SPLIT ═══ */
+    .main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      min-width: 0;
+    }
+
+    .panel-header {
+      padding: 8px 16px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .panel-header .badge {
+      font-size: 0.6rem;
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--accent);
+      padding: 1px 8px;
+      border-radius: 10px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* Editor panel */
+    .editor-panel { border-right: none; }
+
+    .CodeMirror {
+      height: 100% !important;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .CodeMirror-gutters {
+      background: var(--bg2) !important;
+      border-right: 1px solid var(--border) !important;
+    }
+
+    /* Variables panel (collapsible) */
+    .variables-section {
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .variables-toggle {
+      width: 100%;
+      padding: 6px 16px;
+      background: var(--bg2);
+      border: none;
+      color: var(--text2);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+    .variables-toggle:hover { color: var(--accent); }
+    .variables-toggle .arrow { transition: transform 0.2s; }
+    .variables-toggle .arrow.open { transform: rotate(90deg); }
+
+    .variables-body {
+      height: 0;
+      overflow: hidden;
+      transition: height 0.25s ease;
+    }
+    .variables-body.open { height: 150px; }
+
+    .variables-body .CodeMirror {
+      height: 150px !important;
+    }
+
+    /* Preview panel */
+    .preview-panel { border-left: none; }
+
+    .preview-tabs {
+      display: flex;
+      gap: 0;
+      margin-left: auto;
+    }
+    .preview-tab {
+      padding: 2px 10px;
+      font-size: 0.65rem;
+      color: var(--text2);
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      transition: 0.15s;
+    }
+    .preview-tab.active {
+      color: var(--accent);
+      background: rgba(139, 92, 246, 0.08);
+    }
+    .preview-tab:hover { color: var(--text); }
+
+    .preview-body {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      background: var(--bg);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .preview-body.error {
+      color: #ef4444;
+    }
+
+    .preview-body iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    /* ═══ RESPONSIVE ═══ */
     @media (max-width: 768px) {
-      .grid { grid-template-columns: 1fr; }
-      body { padding: 16px; }
-      h1 { font-size: 1.4rem; }
+      .main {
+        flex-direction: column;
+      }
+      .panel { min-height: 300px; }
+      .header h1 { font-size: 0.85rem; }
+      .header-controls select { font-size: 0.7rem; padding: 4px 8px; }
+      .btn { font-size: 0.7rem; padding: 5px 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .header { padding: 8px 12px; gap: 8px; }
+      .header h1 { width: 100%; }
+      .header-controls { margin-left: 0; width: 100%; }
+      .shortcut-hint { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⚡ Editor de Plantillas Velocity</h1>
-    <p class="subtitle">Escribe tu template, define variables y previsualiza el resultado</p>
 
-    <div class="toolbar">
-      <button onclick="previewTemplate()">▶ Previsualizar</button>
-      <button class="btn-example" onclick="loadExample()">📝 Cargar ejemplo</button>
-      <button class="btn-example" onclick="clearAll()">🗑 Limpiar</button>
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <h1>⚡ Velocity Editor</h1>
+    <div class="header-controls">
+      <select id="exampleSelect" onchange="loadExample(this.value)">
+        <option value="">📝 Cargar ejemplo...</option>
+        <option value="basic">Hola Mundo</option>
+        <option value="product">Ficha de producto</option>
+        <option value="loop">Lista con #foreach</option>
+        <option value="conditions">Condicionales #if</option>
+        <option value="email">Email HTML</option>
+      </select>
+      <button class="btn" onclick="renderPreview()">▶ Render</button>
+      <button class="btn-sm" onclick="clearAll()">🗑</button>
       <span class="status" id="status">Listo</span>
+      <span class="shortcut-hint">Ctrl+Enter</span>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN SPLIT ═══ -->
+  <div class="main">
+    <!-- LEFT: Editor -->
+    <div class="panel editor-panel">
+      <div class="panel-header">
+        📄 Template Velocity
+        <span class="badge">.vm</span>
+      </div>
+      <textarea id="template">Hola $nombre!</textarea>
+
+      <!-- Variables (colapsable) -->
+      <div class="variables-section">
+        <button class="variables-toggle" id="varsToggle" onclick="toggleVars()">
+          <span class="arrow" id="varsArrow">▶</span> Variables JSON
+        </button>
+        <div class="variables-body" id="varsBody">
+          <textarea id="variables">{ "nombre": "Artick" }</textarea>
+        </div>
+      </div>
     </div>
 
-    <div class="grid">
-      <div class="editor-panel">
-        <h2>📄 Template Velocity</h2>
-        <textarea id="template" placeholder="$ Ejemplo: Hola $nombre!"></textarea>
+    <!-- RIGHT: Preview -->
+    <div class="panel preview-panel">
+      <div class="panel-header">
+        🖼 Resultado
+        <div class="preview-tabs">
+          <span class="preview-tab active" id="tabText" onclick="switchPreview('text')">Texto</span>
+          <span class="preview-tab" id="tabHtml" onclick="switchPreview('html')">HTML</span>
+        </div>
       </div>
-      <div class="editor-panel">
-        <h2>🔧 Variables (JSON)</h2>
-        <textarea id="variables" placeholder='{ "nombre": "Mundo" }'></textarea>
-      </div>
-    </div>
-
-    <div class="output-panel">
-      <h2>📋 Resultado</h2>
-      <div id="outputText">Esperando...</div>
-      <h2 style="margin-top: 16px;">🖼 Vista Previa</h2>
-      <iframe id="outputPreview"></iframe>
+      <div class="preview-body" id="outputText">Presiona ▶ Render o Ctrl+Enter</div>
+      <iframe id="outputPreview" style="display:none;"></iframe>
     </div>
   </div>
 
   <script>
-    const statusEl = document.getElementById("status");
-    const outputText = document.getElementById("outputText");
-    const outputPreview = document.getElementById("outputPreview");
+    // ─── Inicializar CodeMirror ───
+    const templateEditor = CodeMirror.fromTextArea(document.getElementById("template"), {
+      mode: "velocity",
+      theme: "material-darker",
+      lineNumbers: true,
+      lineWrapping: true,
+      matchBrackets: true,
+      foldGutter: true,
+      gutters: ["CodeMirror-foldgutter"],
+      extraKeys: {
+        "Ctrl-Enter": () => renderPreview(),
+        "Cmd-Enter": () => renderPreview()
+      }
+    });
 
-    function setStatus(text, type = "ok") {
-      statusEl.textContent = text;
-      statusEl.className = "status " + type;
+    const varsEditor = CodeMirror.fromTextArea(document.getElementById("variables"), {
+      mode: { name: "javascript", json: true },
+      theme: "material-darker",
+      lineNumbers: false,
+      lineWrapping: true,
+      extraKeys: {
+        "Ctrl-Enter": () => renderPreview(),
+        "Cmd-Enter": () => renderPreview()
+      }
+    });
+
+    // ─── Live preview (debounced) ───
+    let debounceTimer;
+    templateEditor.on("change", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderPreview, 800);
+    });
+    varsEditor.on("change", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderPreview, 800);
+    });
+
+    // ─── Toggle variables ───
+    function toggleVars() {
+      const body = document.getElementById("varsBody");
+      const arrow = document.getElementById("varsArrow");
+      body.classList.toggle("open");
+      arrow.classList.toggle("open");
+      varsEditor.refresh();
     }
 
-    async function previewTemplate() {
-      const template = document.getElementById("template").value;
-      const variablesRaw = document.getElementById("variables").value;
+    // ─── Switch preview tab ───
+    let previewMode = "text";
+
+    function switchPreview(mode) {
+      previewMode = mode;
+      document.getElementById("tabText").classList.toggle("active", mode === "text");
+      document.getElementById("tabHtml").classList.toggle("active", mode === "html");
+      document.getElementById("outputText").style.display = mode === "text" ? "block" : "none";
+      document.getElementById("outputPreview").style.display = mode === "html" ? "block" : "none";
+    }
+
+    // ─── Render preview ───
+    async function renderPreview() {
+      const template = templateEditor.getValue();
+      let variablesRaw = varsEditor.getValue();
+
+      const outputText = document.getElementById("outputText");
+      const outputPreview = document.getElementById("outputPreview");
+      const status = document.getElementById("status");
 
       if (!template.trim()) {
-        outputText.textContent = "⚠️ Escribe un template primero";
-        outputText.className = "error";
-        setStatus("Template vacío", "err");
+        outputText.textContent = "⚠️ Escribe un template";
+        outputText.className = "preview-body error";
+        setStatus("Vacío", "err");
         return;
       }
 
@@ -234,73 +423,112 @@
       try {
         variables = JSON.parse(variablesRaw || "{}");
       } catch (e) {
-        outputText.textContent = "❌ Error: JSON inválido — " + e.message;
-        outputText.className = "error";
-        setStatus("JSON inválido", "err");
+        outputText.textContent = "❌ JSON inválido: " + e.message;
+        outputText.className = "preview-body error";
+        setStatus("JSON error", "err");
         return;
       }
 
-      setStatus("Procesando...");
+      setStatus("Renderizando...");
 
       try {
-        const response = await fetch("/preview", {
+        const res = await fetch("/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ template, variables })
         });
-
-        const result = await response.json();
+        const result = await res.json();
 
         if (result.output) {
           outputText.textContent = result.output;
-          outputText.className = "";
-          setStatus("✅ Renderizado exitoso");
+          outputText.className = "preview-body";
 
-          // Mostrar en iframe
+          // Render en iframe
           const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
           doc.open();
           doc.write(result.output);
           doc.close();
-        } else if (result.error) {
-          outputText.textContent = "❌ " + result.error;
-          outputText.className = "error";
+
+          setStatus("✅ OK");
+
+          // Auto-switch a HTML si el output contiene etiquetas HTML
+          if (result.output.trim().startsWith("<") && previewMode === "text") {
+            switchPreview("html");
+          }
+        } else {
+          outputText.textContent = "❌ " + (result.error || "Error desconocido");
+          outputText.className = "preview-body error";
           setStatus("Error", "err");
         }
       } catch (e) {
         outputText.textContent = "❌ Error de conexión: " + e.message;
-        outputText.className = "error";
-        setStatus("Error de conexión", "err");
+        outputText.className = "preview-body error";
+        setStatus("Offline", "err");
       }
     }
 
-    function loadExample() {
-      document.getElementById("template").value =
-        `<html>\n<body>\n  <h1>Hola, \\$nombre!</h1>\n  <p>Bienvenido a \\$producto.nombre</p>\n  <p>Precio: \\$${producto.precio}</p>\n\n  \\#if(\\$usuario.premium)\n    <p>🌟 Gracias por ser premium</p>\n  \\#else\n    <p>💡 Hazte premium por \\$${precioPremium}/mes</p>\n  \\#end\n\n  <h2>Últimos lanzamientos:</h2>\n  <ul>\n  \\#foreach(\\$item in \\$lista)\n    <li>\\$item</li>\n  \\#end\n  </ul>\n</body>\n</html>`;
+    function setStatus(text, type) {
+      const el = document.getElementById("status");
+      el.textContent = text;
+      el.className = "status" + (type ? " " + type : "");
+    }
 
-      document.getElementById("variables").value = JSON.stringify({
-        nombre: "Artick",
-        producto: { nombre: "Media Kit Pro", precio: "$29.99" },
-        usuario: { premium: true },
-        precioPremium: 9.99,
-        lista: ["Velocity Editor", "Template Studio", "Render Pro"]
-      }, null, 2);
+    // ─── Ejemplos ───
+    const EXAMPLES = {
+      basic: {
+        template: "¡Hola $nombre! Bienvenido a $sitio.\n\nHoy es $fecha.",
+        vars: { nombre: "Artick", sitio: "artickone.com", fecha: "julio 2026" }
+      },
+      product: {
+        template: `<div class="producto">\n  <h2>$producto.nombre</h2>\n  <p class="precio">$${producto.precio}</p>\n  <p>$producto.descripcion</p>\n  <p>Stock: $producto.stock unidades</p>\n</div>`,
+        vars: { producto: { nombre: "Media Kit Pro", precio: "29.99", descripcion: "Plantilla profesional para streams", stock: 42 } }
+      },
+      loop: {
+        template: `<h3>$titulo</h3>\n<ul>\n#foreach( $item in $lista )\n  <li>$item</li>\n#end\n</ul>\n\n<p>Total: ${lista.size()} items</p>`,
+        vars: { titulo: "Últimos lanzamientos", lista: ["Velocity Editor", "Template Studio", "Render Pro", "Media Kit"] }
+      },
+      conditions: {
+        template: `<h1>Bienvenido, $usuario</h1>\n\n#if( $premium == true )\n  <p class="premium">🌟 Gracias por ser premium</p>\n  <p>Descuento: $descuento%</p>\n#else\n  <p class="free">💡 Hazte premium por $precio/mes</p>\n#end\n\n#set( $total = $precio * 12 )\n<p>Plan anual: \$${total}</p>`,
+        vars: { usuario: "Artick", premium: false, precio: 9.99, descuento: 20 }
+      },
+      email: {
+        template: `<html>\n<body style="font-family:Arial;padding:20px;">\n  <h1 style="color:#8b5cf6;">¡Hola, $nombre!</h1>\n  <p>Gracias por tu interés en <strong>$producto</strong>.</p>\n\n  #if( $oferta )\n  <div style="background:#f0f0ff;padding:15px;border-radius:8px;">\n    <h3>🎉 Oferta especial</h3>\n    <p>Usa el código <strong>$codigo</strong> y obtén $descuento% de descuento.</p>\n  </div>\n  #end\n\n  <hr style="margin:20px 0;">\n  <p style="color:#888;">Saludos,<br>El equipo de $empresa</p>\n</body>\n</html>`,
+        vars: { nombre: "Artick", producto: "Velocity Editor Pro", oferta: true, codigo: "ARTICK20", descuento: 20, empresa: "Template Studio" }
+      }
+    };
 
-      setStatus("✅ Ejemplo cargado");
-      outputText.textContent = "Presiona ▶ Previsualizar";
-      outputText.className = "";
+    function loadExample(key) {
+      if (!key || !EXAMPLES[key]) return;
+      const ex = EXAMPLES[key];
+      templateEditor.setValue(ex.template);
+      varsEditor.setValue(JSON.stringify(ex.vars, null, 2));
+      setStatus("✅ " + key + " cargado");
+
+      // Auto-abrir variables si están cerradas
+      const body = document.getElementById("varsBody");
+      const arrow = document.getElementById("varsArrow");
+      if (!body.classList.contains("open")) {
+        body.classList.add("open");
+        arrow.classList.add("open");
+        setTimeout(() => varsEditor.refresh(), 300);
+      }
+
+      renderPreview();
     }
 
     function clearAll() {
-      document.getElementById("template").value = "";
-      document.getElementById("variables").value = "";
-      outputText.textContent = "Esperando...";
-      outputText.className = "";
-      const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
-      doc.open();
-      doc.write("");
-      doc.close();
+      templateEditor.setValue("");
+      varsEditor.setValue("{}");
+      document.getElementById("outputText").textContent = "Esperando...";
+      document.getElementById("outputText").className = "preview-body";
+      const doc = document.getElementById("outputPreview").contentDocument || document.getElementById("outputPreview").contentWindow.document;
+      doc.open(); doc.write(""); doc.close();
       setStatus("Listo");
+      document.getElementById("exampleSelect").value = "";
     }
+
+    // ─── Primer render automático ───
+    setTimeout(renderPreview, 500);
   </script>
 </body>
 </html>
