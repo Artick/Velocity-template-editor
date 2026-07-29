@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { createEngine } = require("velocity");
+const velocity = require("velocityjs");
 const app = express();
 const port = 3000;
 
@@ -9,48 +9,78 @@ app.use(bodyParser.json());
 // Función para verificar si todas las variables están presentes
 function checkVariables(template, variables) {
   const missingVariables = [];
-    const regex = /\$\{?([a-zA-Z0-9_.]+)\}?/g;
-      let match;
+  // Regex para encontrar variables Velocity: $var, ${var}, $var.prop
+  const regex = /\$\{?([a-zA-Z_][a-zA-Z0-9_.]*)\}?/g;
+  let match;
 
-        // Buscar todas las variables y verificar si están en el contexto
-          while ((match = regex.exec(template)) !== null) {
-              const varPath = match[1];
-                  if (!getValueFromPath(variables, varPath)) {
-                        missingVariables.push(varPath);
-                            }
-                              }
+  const variableNames = new Set();
 
-                                return missingVariables;
-                                }
+  // Extraer nombres de variables del objeto de variables
+  function extractKeys(obj, prefix = "") {
+    for (const key of Object.keys(obj)) {
+      const fullPath = prefix ? `${prefix}.${key}` : key;
+      variableNames.add(fullPath);
+      if (typeof obj[key] === "object" && obj[key] !== null) {
+        extractKeys(obj[key], fullPath);
+      }
+    }
+  }
+  extractKeys(variables);
 
-                                // Obtener el valor de un camino (path) en un objeto
-                                function getValueFromPath(obj, path) {
-                                  return path.split('.').reduce((o, p) => (o ? o[p] : undefined), obj);
-                                  }
+  while ((match = regex.exec(template)) !== null) {
+    const varPath = match[1];
+    // Ignorar si es una directiva de Velocity
+    if (varPath.match(/^(foreach|if|else|elseif|end|set|parse|include|macro|stop)$/)) {
+      continue;
+    }
+    // Verificar si la variable existe en el contexto
+    const value = getValueFromPath(variables, varPath);
+    if (value === undefined || value === null) {
+      // Solo agregar si no es una variable que ya tenemos
+      if (!variableNames.has(varPath)) {
+        missingVariables.push(varPath);
+      }
+    }
+  }
 
-                                  // Ruta de vista previa
-                                  app.post("/preview", (req, res) => {
-                                    const { template, variables } = req.body;
+  return missingVariables;
+}
 
-                                      // Verificar si faltan variables
-                                        const missingVariables = checkVariables(template, variables);
+// Obtener el valor de un camino (path) en un objeto
+function getValueFromPath(obj, path) {
+  return path.split(".").reduce((o, p) => (o ? o[p] : undefined), obj);
+}
 
-                                          if (missingVariables.length > 0) {
-                                              res.json({
-                                                    error: `Faltan variables en el template: ${missingVariables.join(", ")}`
-                                                        });
-                                                            return;
-                                                              }
+// Ruta de vista previa
+app.post("/preview", (req, res) => {
+  const { template, variables } = req.body;
 
-                                                                try {
-                                                                    const engine = createEngine();
-                                                                        const output = engine.render(template, variables);
-                                                                            res.json({ output });
-                                                                              } catch (error) {
-                                                                                  res.json({ error: error.message });
-                                                                                    }
-                                                                                    });
+  // Validar entrada
+  if (!template) {
+    return res.json({ error: "El campo 'template' es requerido" });
+  }
+  if (!variables || typeof variables !== "object") {
+    return res.json({ error: "El campo 'variables' debe ser un objeto JSON válido" });
+  }
 
-                                                                                    app.listen(port, () => {
-                                                                                      console.log(`Servidor escuchando en http://localhost:${port}`);
-                                                                                      });
+  // Verificar si faltan variables
+  const missingVariables = checkVariables(template, variables);
+
+  if (missingVariables.length > 0) {
+    return res.json({
+      error: `Faltan variables en el template: ${missingVariables.join(", ")}`
+    });
+  }
+
+  try {
+    const output = velocity.render(template, variables);
+    res.json({ output });
+  } catch (error) {
+    res.json({ error: `Error al renderizar: ${error.message}` });
+  }
+});
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+  console.log(`📝 Endpoint: POST /preview`);
+});

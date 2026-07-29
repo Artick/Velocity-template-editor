@@ -5,58 +5,301 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editor de Plantillas Velocity</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 32px;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .editor-panel {
+      background: #12121a;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .editor-panel h2 {
+      font-size: 0.85rem;
+      color: #8b5cf6;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      background: #1a1a2e;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    textarea:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .output-panel {
+      background: #12121a;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .output-panel h2 {
+      font-size: 0.85rem;
+      color: #8b5cf6;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    #outputText {
+      background: #1a1a2e;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 100px;
+      max-height: 200px;
+      overflow: auto;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #e0e0e0;
+    }
+
+    #outputText.error {
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
     #outputPreview {
       width: 100%;
       height: 300px;
-      border: 1px solid #ddd;
-      margin-top: 20px;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 8px;
+      margin-top: 12px;
+      background: #fff;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: linear-gradient(135deg, #8b5cf6, #7c4af5);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-example {
+      background: transparent;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #8b5cf6;
+      font-size: 0.8rem;
+      padding: 8px 16px;
+    }
+
+    .btn-example:hover {
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .status {
+      color: #888;
+      font-size: 0.8rem;
+      margin-left: auto;
+    }
+
+    .status.ok { color: #22c55e; }
+    .status.err { color: #ef4444; }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      body { padding: 16px; }
+      h1 { font-size: 1.4rem; }
     }
   </style>
 </head>
 <body>
-  <h1>Editor de Plantillas Velocity</h1>
-  
-  <label for="template">Plantilla Velocity (VM):</label>
-  <textarea id="template" rows="10" cols="50"></textarea>
-  
-  <label for="variables">Variables (JSON):</label>
-  <textarea id="variables" rows="10" cols="50"></textarea>
-  
-  <button onclick="previewTemplate()">Previsualizar</button>
+  <div class="container">
+    <h1>⚡ Editor de Plantillas Velocity</h1>
+    <p class="subtitle">Escribe tu template, define variables y previsualiza el resultado</p>
 
-  <h2>Salida Interpretada</h2>
-  <div id="outputText"></div>
+    <div class="toolbar">
+      <button onclick="previewTemplate()">▶ Previsualizar</button>
+      <button class="btn-example" onclick="loadExample()">📝 Cargar ejemplo</button>
+      <button class="btn-example" onclick="clearAll()">🗑 Limpiar</button>
+      <span class="status" id="status">Listo</span>
+    </div>
 
-  <h2>Vista Final</h2>
-  <!-- Iframe para mostrar el HTML renderizado -->
-  <iframe id="outputPreview"></iframe>
+    <div class="grid">
+      <div class="editor-panel">
+        <h2>📄 Template Velocity</h2>
+        <textarea id="template" placeholder="$ Ejemplo: Hola $nombre!"></textarea>
+      </div>
+      <div class="editor-panel">
+        <h2>🔧 Variables (JSON)</h2>
+        <textarea id="variables" placeholder='{ "nombre": "Mundo" }'></textarea>
+      </div>
+    </div>
+
+    <div class="output-panel">
+      <h2>📋 Resultado</h2>
+      <div id="outputText">Esperando...</div>
+      <h2 style="margin-top: 16px;">🖼 Vista Previa</h2>
+      <iframe id="outputPreview"></iframe>
+    </div>
+  </div>
 
   <script>
+    const statusEl = document.getElementById("status");
+    const outputText = document.getElementById("outputText");
+    const outputPreview = document.getElementById("outputPreview");
+
+    function setStatus(text, type = "ok") {
+      statusEl.textContent = text;
+      statusEl.className = "status " + type;
+    }
+
     async function previewTemplate() {
       const template = document.getElementById("template").value;
-      const variables = JSON.parse(document.getElementById("variables").value || '{}');
-      const response = await fetch("/preview", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ template, variables })
-      });
+      const variablesRaw = document.getElementById("variables").value;
 
-      const result = await response.json();
-      if (result.output) {
-        // Mostrar el HTML renderizado en texto
-        document.getElementById("outputText").innerText = result.output;
-
-        // Insertar el HTML renderizado dentro del iframe para vista final
-        const iframe = document.getElementById("outputPreview");
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        doc.open();
-        doc.write(result.output);
-        doc.close();
-      } else if (result.error) {
-        document.getElementById("outputText").innerText = "Error: " + result.error;
+      if (!template.trim()) {
+        outputText.textContent = "⚠️ Escribe un template primero";
+        outputText.className = "error";
+        setStatus("Template vacío", "err");
+        return;
       }
+
+      let variables;
+      try {
+        variables = JSON.parse(variablesRaw || "{}");
+      } catch (e) {
+        outputText.textContent = "❌ Error: JSON inválido — " + e.message;
+        outputText.className = "error";
+        setStatus("JSON inválido", "err");
+        return;
+      }
+
+      setStatus("Procesando...");
+
+      try {
+        const response = await fetch("/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template, variables })
+        });
+
+        const result = await response.json();
+
+        if (result.output) {
+          outputText.textContent = result.output;
+          outputText.className = "";
+          setStatus("✅ Renderizado exitoso");
+
+          // Mostrar en iframe
+          const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
+          doc.open();
+          doc.write(result.output);
+          doc.close();
+        } else if (result.error) {
+          outputText.textContent = "❌ " + result.error;
+          outputText.className = "error";
+          setStatus("Error", "err");
+        }
+      } catch (e) {
+        outputText.textContent = "❌ Error de conexión: " + e.message;
+        outputText.className = "error";
+        setStatus("Error de conexión", "err");
+      }
+    }
+
+    function loadExample() {
+      document.getElementById("template").value =
+        `<html>\n<body>\n  <h1>Hola, \\$nombre!</h1>\n  <p>Bienvenido a \\$producto.nombre</p>\n  <p>Precio: \\$${producto.precio}</p>\n\n  \\#if(\\$usuario.premium)\n    <p>🌟 Gracias por ser premium</p>\n  \\#else\n    <p>💡 Hazte premium por \\$${precioPremium}/mes</p>\n  \\#end\n\n  <h2>Últimos lanzamientos:</h2>\n  <ul>\n  \\#foreach(\\$item in \\$lista)\n    <li>\\$item</li>\n  \\#end\n  </ul>\n</body>\n</html>`;
+
+      document.getElementById("variables").value = JSON.stringify({
+        nombre: "Artick",
+        producto: { nombre: "Media Kit Pro", precio: "$29.99" },
+        usuario: { premium: true },
+        precioPremium: 9.99,
+        lista: ["Velocity Editor", "Template Studio", "Render Pro"]
+      }, null, 2);
+
+      setStatus("✅ Ejemplo cargado");
+      outputText.textContent = "Presiona ▶ Previsualizar";
+      outputText.className = "";
+    }
+
+    function clearAll() {
+      document.getElementById("template").value = "";
+      document.getElementById("variables").value = "";
+      outputText.textContent = "Esperando...";
+      outputText.className = "";
+      const doc = outputPreview.contentDocument || outputPreview.contentWindow.document;
+      doc.open();
+      doc.write("");
+      doc.close();
+      setStatus("Listo");
     }
   </script>
 </body>
