@@ -1,0 +1,17 @@
+# ═══════════════════════════════════════════════════════
+# Render Blueprint — Infrastructure as Code
+# https://render.com/docs/blueprint-spec
+# ═══════════════════════════════════════════════════════
+
+services:
+  - type: web
+    name: velocity-editor
+    runtime: node
+    repo: https://github.com/Artick/Velocity-template-editor
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
