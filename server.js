@@ -6,15 +6,17 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
-// CSP amigable para que el iframe funcione sin bloqueos
+// CSP permisiva para CDN de CodeMirror
 app.use((req, res, next) => {
-  // Solo aplicar CSP a respuestas exitosas (no a 404)
-  const originalJson = res.json.bind(res);
-  const originalSend = res.send.bind(res);
-  
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src 'self' https:; connect-src 'self' https:; img-src 'self' data: https:"
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+    "font-src 'self' https://cdnjs.cloudflare.com data:; " +
+    "frame-src 'self' https:; " +
+    "connect-src 'self' https:; " +
+    "img-src 'self' data: https:"
   );
   next();
 });
