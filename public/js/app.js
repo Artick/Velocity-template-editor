@@ -118,10 +118,12 @@ function validateHTML() {
   // Usar setTimeout para permitir que el DOM se actualice
   setTimeout(() => {
     try {
-      if (typeof HTMLHint === "undefined") {
+      if (typeof HTMLHint === "undefined" || !HTMLHint.HTMLHint) {
         body.innerHTML = '<div class="validation-loading">❌ HTMLHint no cargado (revisa conexión a CDN)</div>';
         return;
       }
+
+      const hh = HTMLHint.HTMLHint;
 
       const rules = {
         "tagname-lowercase": true,
@@ -140,7 +142,7 @@ function validateHTML() {
         "head-script-disabled": false
       };
 
-      const results = HTMLHint.verify(output, rules);
+      const results = hh.verify(output, rules);
 
       if (results.length === 0) {
         body.innerHTML = '<div class="validation-empty">✅ HTML válido — sin errores</div>';
