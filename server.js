@@ -2,9 +2,23 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const velocity = require("velocityjs");
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "1mb" }));
+
+// Rate limiting simple en producción
+if (process.env.NODE_ENV === "production") {
+  const rateLimit = {};
+  setInterval(() => { Object.keys(rateLimit).forEach(k => delete rateLimit[k]); }, 60000);
+  app.use((req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    rateLimit[ip] = (rateLimit[ip] || 0) + 1;
+    if (rateLimit[ip] > 60) {
+      return res.status(429).json({ error: "Demasiadas solicitudes. Intenta de nuevo en 1 minuto." });
+    }
+    next();
+  });
+}
 
 // CSP permisiva para CDN de CodeMirror
 app.use((req, res, next) => {
@@ -98,7 +112,13 @@ app.post("/preview", (req, res) => {
   }
 });
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
-  console.log(`📝 Endpoint: POST /preview`);
-});
+// Exportar app para testing
+module.exports = app;
+
+// Solo iniciar el servidor si se ejecuta directamente
+if (require.main === module) {
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+    console.log(`📝 Endpoint: POST /preview`);
+  });
+}

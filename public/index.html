@@ -62,6 +62,7 @@
             <option value="768px">📱 768px</option>
             <option value="1024px">💻 1024px</option>
           </select>
+          <button class="preview-mode-btn" id="btnValidate" title="Validar HTML">🔍</button>
         </div>
         <div class="preview-tabs">
           <span class="preview-tab active" data-mode="text">Texto</span>
@@ -71,6 +72,13 @@
       <div class="preview-body" id="outputText">Presiona ▶ Render o Ctrl+Enter</div>
       <div class="preview-iframe-wrapper" id="previewIframeWrapper">
         <iframe id="outputPreview"></iframe>
+      </div>
+      <div class="validation-panel" id="validationPanel" style="display:none;">
+        <div class="validation-header">
+          <span class="validation-title" id="validationTitle">🔍 Validación HTML</span>
+          <button class="validation-close" id="validationClose">✕</button>
+        </div>
+        <div class="validation-body" id="validationBody"></div>
       </div>
     </div>
   </div>
@@ -149,6 +157,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- SCRIPTS -->
+  <script src="https://unpkg.com/htmlhint@1.9.2/dist/htmlhint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/velocity/velocity.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>

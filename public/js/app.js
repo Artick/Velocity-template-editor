@@ -83,6 +83,82 @@ function setPreviewWidth(val) {
   document.getElementById("outputPreview").style.maxWidth = val;
 }
 
+// ─── HTML Validation ───
+
+function validateHTML() {
+  const panel = document.getElementById("validationPanel");
+  const body = document.getElementById("validationBody");
+  const title = document.getElementById("validationTitle");
+  const output = document.getElementById("outputText").textContent;
+
+  if (!output || output === "Presiona ▶ Render o Ctrl+Enter") {
+    body.innerHTML = '<div class="validation-loading">⚠️ Renderiza primero</div>';
+    panel.style.display = "flex";
+    return;
+  }
+
+  // Solo validar si parece HTML
+  if (!output.trim().startsWith("<")) {
+    body.innerHTML = '<div class="validation-loading">ℹ️ El output no parece HTML, no se puede validar</div>';
+    panel.style.display = "flex";
+    return;
+  }
+
+  body.innerHTML = '<div class="validation-loading">🔍 Validando...</div>';
+  panel.style.display = "flex";
+
+  // Usar setTimeout para permitir que el DOM se actualice
+  setTimeout(() => {
+    try {
+      if (typeof HTMLHint === "undefined") {
+        body.innerHTML = '<div class="validation-loading">❌ HTMLHint no cargado (revisa conexión a CDN)</div>';
+        return;
+      }
+
+      const rules = {
+        "tagname-lowercase": true,
+        "attr-lowercase": true,
+        "attr-value-double-quotes": true,
+        "spec-char-escape": true,
+        "id-unique": true,
+        "src-not-empty": true,
+        "attr-no-duplication": true,
+        "title-require": false,
+        "doctype-first": false,
+        "tag-pair": true,
+        "empty-tag-not-self-closed": true,
+        "href-abs-or-rel": false,
+        "attr-unsafe-chars": true,
+        "head-script-disabled": false
+      };
+
+      const results = HTMLHint.verify(output, rules);
+
+      if (results.length === 0) {
+        body.innerHTML = '<div class="validation-empty">✅ HTML válido — sin errores</div>';
+        title.textContent = "🔍 Validación HTML — 0 errores";
+        return;
+      }
+
+      const errors = results.filter(r => r.type === "error");
+      const warnings = results.filter(r => r.type === "warning");
+      title.textContent = `🔍 Validación — ${errors.length} errores, ${warnings.length} advertencias`;
+
+      body.innerHTML = results.map(r => {
+        const typeClass = r.type === "error" ? "error" : "warning";
+        return '<div class="validation-issue">' +
+          '<span class="v-type ' + typeClass + '">' + r.type + '</span>' +
+          '<span class="v-msg">' + escHtml(r.message) + '</span>' +
+          '<span class="v-line">L:' + r.line + ' C:' + r.col + '</span>' +
+          '</div>';
+      }).join("");
+
+    } catch (e) {
+      body.innerHTML = '<div class="validation-loading">❌ Error al validar: ' + escHtml(e.message) + '</div>';
+    }
+  }, 100);
+}
+
 // ─── Auto-detect variables from template ───
 
 function detectVariablesFromTemplate(template) {
@@ -696,6 +772,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("importFile").addEventListener("change", importTemplate);
   document.getElementById("previewThemeBtn").addEventListener("click", togglePreviewTheme);
   document.getElementById("previewWidth").addEventListener("change", (e) => setPreviewWidth(e.target.value));
+  document.getElementById("btnValidate").addEventListener("click", validateHTML);
+  document.getElementById("validationClose").addEventListener("click", () => {
+    document.getElementById("validationPanel").style.display = "none";
+  });
 
   // Examples
   document.getElementById("exampleSelect").addEventListener("change", (e) => loadExample(e.target.value));
